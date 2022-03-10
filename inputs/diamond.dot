@@ -1,0 +1,14 @@
+digraph mygraph {
+  node [shape=box];
+  A -> B;
+  B -> C;
+  B -> D;
+  C -> E;
+  D -> E;
+  E -> F;
+  A -> F [label="one"];
+  A -> F [label="two"];
+  A -> F [label="three"];
+  A -> F [label="four"];
+  A -> F [label="five"];
+}

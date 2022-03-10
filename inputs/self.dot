@@ -1,0 +1,11 @@
+digraph {
+
+node [fillcolor="purple"];
+
+  A -> A [label="10"];
+  A -> A [label="20"];
+  A -> A [label="30"];
+  A -> A [label="40"];
+  A -> A [label="50"];
+
+}

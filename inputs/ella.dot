@@ -1,0 +1,16 @@
+digraph {
+
+node [fillcolor="purple"] A B;
+node [fillcolor="orange"] Z;
+node [fillcolor="green"] G;
+node [fillcolor="blue"] B ;
+node [fillcolor="yellow"] C;
+
+  A -> B;
+  B -> C;
+  Z -> A;
+  B -> Y;
+  G -> Z;
+  B -> Z;
+
+}

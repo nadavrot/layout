@@ -1,0 +1,5 @@
+digraph {
+  rankdir="LR";
+  node [style=filled fillcolor="sandybrown" shape=Mrecord];
+  "חוף בת ים" -> "הרצליה" [label="🌴"];
+}

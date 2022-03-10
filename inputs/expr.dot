@@ -1,0 +1,24 @@
+graph cluster38
+{
+  label="(% (EXP (% (X) (% (X) (X)))) (EXP (SIN (X))))"
+  n039 [label="%"] ;
+  n040 [label="EXP"] ;
+  n041 [label="%"] ;
+  n042 [label="X"] ;
+  n043 [label="%"] ;
+  n044 [label="X"] ;
+  n045 [label="X"] ;
+  n046 [label="EXP"] ;
+  n047 [label="SIN"] ;
+  n048 [label="X"] ;
+  n039 ;
+  n039 -- n040 ;
+  n040 -- n041 ;
+  n041 -- n042 ;
+  n041 -- n043 ;
+  n043 -- n044 ;
+  n043 -- n045 ;
+  n039 -- n046 ;
+  n046 -- n047 ;
+  n047 -- n048 ;
+}
