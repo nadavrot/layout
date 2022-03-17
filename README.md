@@ -31,7 +31,7 @@ A large graph that demonstrates the edge crossing elimination optimization.
 
 ![](docs/bk.png)
 
-Unicode, emoji and left-to-right languages:
+Unicode, emoji and right-to-left languages:
 
 ![](docs/heb.png)
 
