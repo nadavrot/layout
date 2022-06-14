@@ -8,7 +8,7 @@ can parse Graphviz dot files and render them.
 Build the crate and render some dot files with the command
 
 ```bash
-crate run --bin run ./inputs/bk.dot -o output.svg
+cargo run --bin run ./inputs/bk.dot -o output.svg
 ```
 
 ## Gallery
