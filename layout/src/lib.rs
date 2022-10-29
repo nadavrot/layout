@@ -13,28 +13,31 @@ The project also comes with a command line utility for rendering .DOT files to
 
 # Parser example: parse a dot file
 
-This crate provides an API for parsing DOT files. For example,
-to load, parse and print the AST:
+This crate provides an API for parsing DOT files.
+
+Add the following to `Cargo.toml`:
+
+```toml
+layout-rs = "0.1.0" # or
+layout-rs = { version = "0.1.0", features = ["log"] }
+```
+
+Load, parse and print the AST:
 
 ```rust
-    use layout::gv;
-    use std::fs;
+use layout::gv;
 
-    let contents = "digraph { a -> b [label=\"foo\"]; }";
-    let mut parser = gv::DotParser::new(&contents);
-    let tree = parser.process();
+let contents = "digraph { a -> b [label=\"foo\"]; }";
+let mut parser = gv::DotParser::new(&contents);
 
-    match tree {
-        Result::Err(err) => {
-            parser.print_error();
-            # #[cfg(feature = "log")]
-            log::error!("Error: {}", err);
-        }
-
-        Result::Ok(g) => {
-                gv::dump_ast(&g);
-        }
+match parser.process() {
+    Ok(g) => gv::dump_ast(&g),
+    Err(err) => {
+        parser.print_error();
+        # #[cfg(feature = "log")]
+        log::error!("Error: {}", err);
     }
+}
 ```
 
 The example above would print the program AST, or a readable error message,
