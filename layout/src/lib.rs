@@ -18,8 +18,8 @@ This crate provides an API for parsing DOT files.
 Add the following to `Cargo.toml`:
 
 ```toml
-layout-rs = "0.1.0" # or
-layout-rs = { version = "0.1.0", features = ["log"] }
+layout-rs = "0.1.1" # or
+layout-rs = { version = "0.1.1", features = ["log"] }
 ```
 
 Load, parse and print the AST:
