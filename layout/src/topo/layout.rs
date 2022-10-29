@@ -4,6 +4,7 @@
 //! and the Ranks data-structure to represent rows of shapes that have the same
 //! x coordinate.
 
+#[cfg(feature = "log")]
 extern crate log;
 
 use crate::adt::dag::*;
@@ -147,6 +148,7 @@ impl VisualGraph {
     }
 
     fn lower(&mut self, disable_optimizations: bool) {
+        #[cfg(feature = "log")]
         log::info!("Lowering a graph with {} nodes.", self.num_nodes());
         self.to_valid_dag();
         self.split_text_edges();

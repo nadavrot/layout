@@ -256,6 +256,7 @@ impl GraphBuilder {
             if let Result::Ok(x) = pw.parse::<usize>() {
                 line_width = x;
             } else {
+                #[cfg(feature = "log")]
                 log::info!("Can't parse integer \"{}\"", pw);
             }
         }
@@ -264,6 +265,7 @@ impl GraphBuilder {
             if let Result::Ok(x) = fx.parse::<usize>() {
                 font_size = x;
             } else {
+                #[cfg(feature = "log")]
                 log::info!("Can't parse integer \"{}\"", fx);
             }
         }
@@ -346,6 +348,7 @@ impl GraphBuilder {
             if let Result::Ok(x) = fx.parse::<usize>() {
                 font_size = x;
             } else {
+                #[cfg(feature = "log")]
                 log::info!("Can't parse integer \"{}\"", fx);
             }
         }
@@ -354,6 +357,7 @@ impl GraphBuilder {
             if let Result::Ok(x) = pw.parse::<usize>() {
                 line_width = x;
             } else {
+                #[cfg(feature = "log")]
                 log::info!("Can't parse integer \"{}\"", pw);
             }
         }

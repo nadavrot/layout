@@ -1,9 +1,10 @@
 //! This module contains the implementation of the placer, which assigns the
 //! final (x,y) coordinates to all of the elements in the graph.
 
+#[cfg(feature = "log")]
 extern crate log;
-use crate::topo::layout::VisualGraph;
 
+use crate::topo::layout::VisualGraph;
 use crate::topo::placer::bk::BK;
 use crate::topo::placer::edge_fixer;
 use crate::topo::placer::move_between_rows;
@@ -20,14 +21,17 @@ impl<'a> Placer<'a> {
     }
 
     pub fn layout(&mut self, no_layout: bool) {
+        #[cfg(feature = "log")]
         log::info!("Starting layout of {} nodes. ", self.vg.num_nodes());
 
         // We implement left-to-right layout by transposing the graph.
         let need_transpose = !self.vg.orientation().is_top_to_bottom();
         if need_transpose {
+            #[cfg(feature = "log")]
             log::info!("Placing nodes in Left-to-right mode.");
             self.vg.transpose();
         } else {
+            #[cfg(feature = "log")]
             log::info!("Placing nodes in Top-to-Bottom mode.");
         }
 
@@ -42,6 +46,7 @@ impl<'a> Placer<'a> {
         verifier::do_it(self.vg);
 
         if no_layout {
+            #[cfg(feature = "log")]
             log::info!("Skipping the layout phase.");
             // Finalize left-to-right graphs.
             if need_transpose {
