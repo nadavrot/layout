@@ -1,0 +1,10 @@
+[package]
+name = "layout"
+version = "0.1.0"
+authors = ["Nadav Rotem <nadav256@gmail.com>"]
+edition = "2018"
+description = "A graph visualization program"
+keywords = ["visualization", "svg", "render", "dot", "graphviz"]
+
+[dependencies]
+log = "0.4.17"
