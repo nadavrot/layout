@@ -106,10 +106,12 @@ fn move_text_up(vg: &mut VisualGraph) -> usize {
     cnt
 }
 
+#[cfg_attr(not(feature = "log"), allow(unused_assignments, unused_variables))]
 pub fn do_it(vg: &mut VisualGraph) {
     let mut cnt = 0;
     for _ in 0..3 {
         cnt += move_text_up(vg);
     }
+    #[cfg(feature = "log")]
     log::info!("Moved {} labels between rows", cnt);
 }

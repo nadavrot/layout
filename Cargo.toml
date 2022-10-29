@@ -22,7 +22,7 @@ bench = false
 members = ["layout"]
 
 [dependencies]
-layout = { path = "layout" }
+layout = { path = "layout", features = ["log"] }
 clap = "4.0.18"
 log = "0.4.17"
 env_logger = "0.9"

@@ -27,6 +27,7 @@ to load, parse and print the AST:
     match tree {
         Result::Err(err) => {
             parser.print_error();
+            # #[cfg(feature = "log")]
             log::error!("Error: {}", err);
         }
 

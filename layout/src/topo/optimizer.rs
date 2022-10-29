@@ -75,9 +75,11 @@ impl<'a> EdgeCrossOptimizer<'a> {
 
     pub fn optimize(&mut self) {
         self.dag.verify();
+        #[cfg(feature = "log")]
         log::info!("Optimizing edge crossing.");
         let mut best_rank = self.dag.ranks().clone();
         let mut best_cnt = self.count_crossed_edges();
+        #[cfg(feature = "log")]
         log::info!("Starting with {} crossings.", best_cnt);
         for i in 0..50 {
             let dir = match i % 4 {
@@ -88,6 +90,7 @@ impl<'a> EdgeCrossOptimizer<'a> {
             self.swap_crossed_edges(dir);
             let new_cnt = self.count_crossed_edges();
             if new_cnt < best_cnt {
+                #[cfg(feature = "log")]
                 log::info!("Found a rank with {} crossings.", new_cnt);
                 best_rank = self.dag.ranks().clone();
                 best_cnt = new_cnt;
@@ -248,8 +251,11 @@ impl<'a> RankOptimizer<'a> {
     pub fn optimize(&mut self) {
         self.dag.verify();
 
+        #[cfg(feature = "log")]
         log::info!("Optimizing the ranks.");
+        #[cfg(feature = "log")]
         let mut cnt = 0;
+        #[cfg(feature = "log")]
         let mut iter = 0;
 
         loop {
@@ -259,13 +265,17 @@ impl<'a> RankOptimizer<'a> {
                     c += 1;
                 }
             }
-            cnt += c;
-            iter += 1;
+            #[cfg(feature = "log")]
+            {
+                cnt += c;
+                iter += 1;
+            }
             if c == 0 {
                 break;
             }
         }
 
+        #[cfg(feature = "log")]
         log::info!("Sank {} nodes in {} iteration.", cnt, iter);
     }
 }
