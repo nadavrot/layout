@@ -407,7 +407,7 @@ impl<'a> BK<'a> {
         for i in 0..self.vg.dag.num_levels() - 1 {
             // The row above.
             let mut r0 = self.vg.dag.row(i).clone();
-            // The curent row.
+            // The current row.
             let mut r1 = self.vg.dag.row(i + 1).clone();
             // Marks which nodes of r0 are available.
             let mut used: Vec<bool> = vec![false; r0.len()];

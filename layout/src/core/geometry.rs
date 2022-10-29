@@ -298,7 +298,7 @@ pub fn in_range(range: (f64, f64), x: f64) -> bool {
 }
 
 /// \return True if the boxes (defined by the bounding box) intersect.
-pub fn do_boxs_intersect(p1: (Point, Point), p2: (Point, Point)) -> bool {
+pub fn do_boxes_intersect(p1: (Point, Point), p2: (Point, Point)) -> bool {
     let overlap_x = p2.0.x < p1.1.x && p1.0.x < p2.1.x;
     let overlap_y = p2.0.y < p1.1.y && p1.0.y < p2.1.y;
     overlap_x && overlap_y
