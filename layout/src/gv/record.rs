@@ -89,7 +89,7 @@ impl RecordParser {
         let mut frame = RecordParserFrame::new();
         loop {
             // Read one char.
-            let ch = self.input[self.pos] as char;
+            let ch = self.input[self.pos];
 
             match ch {
                 '{' => {

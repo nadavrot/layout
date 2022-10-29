@@ -40,8 +40,8 @@ impl NodeAttachInfo {
 
     /// Align the node \p from to \p to.
     pub fn add(&mut self, from: NodeHandle, to: NodeHandle) {
-        assert!(!self.below(to).is_some(), "Node is already taken");
-        assert!(!self.above(from).is_some(), "Node is already set");
+        assert!(self.below(to).is_none(), "Node is already taken");
+        assert!(self.above(from).is_none(), "Node is already set");
         self.above[from.get_index()] = Some(to);
         self.below[to.get_index()] = Some(from);
     }
@@ -392,12 +392,7 @@ impl<'a> BK<'a> {
 
     /// \returns the index of \p elem in \p vec.
     fn index_of(elem: NodeHandle, vec: &Vec<NodeHandle>) -> Option<usize> {
-        for i in 0..vec.len() {
-            if vec[i] == elem {
-                return Some(i);
-            }
-        }
-        None
+        (0..vec.len()).find(|&i| vec[i] == elem)
     }
 
     fn compute_alignment(&self, order: OrderLR) -> NodeAttachInfo {

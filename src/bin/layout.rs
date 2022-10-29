@@ -39,24 +39,15 @@ fn test0(offset_x: f64, offset_y: f64, svg: &mut SVGWriter, shape_idx: usize) {
             offset_y + 500. + 400. * (i * deg).sin(),
         );
 
-        let sp;
-        match shape_idx {
-            0 => {
-                sp = ShapeKind::new_box(&i.to_string());
-            }
-            1 => {
-                sp = ShapeKind::new_circle(&i.to_string());
-            }
-            2 => {
-                sp = ShapeKind::new_double_circle(&i.to_string());
-            }
-            3 => {
-                sp = generate_record();
-            }
+        let sp = match shape_idx {
+            0 => ShapeKind::new_box(&i.to_string()),
+            1 => ShapeKind::new_circle(&i.to_string()),
+            2 => ShapeKind::new_double_circle(&i.to_string()),
+            3 => generate_record(),
             _ => {
                 panic!("Invalid test number");
             }
-        }
+        };
 
         let look = StyleAttr::simple();
         let mut es = Element::create(sp, look, Orientation::LeftToRight, sz);

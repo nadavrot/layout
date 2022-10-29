@@ -44,7 +44,7 @@ impl<K: PartialEq + Clone + Hash + Eq, V: Clone> ScopedMap<K, V> {
         let scope = self.stack.last_mut().unwrap();
         for pair in scope {
             if pair.0 == *key {
-                (*pair).1 = val.clone();
+                pair.1 = val.clone();
                 return;
             }
         }
