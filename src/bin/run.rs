@@ -5,7 +5,7 @@ extern crate clap;
 extern crate env_logger;
 extern crate log;
 
-use clap::{App, Arg};
+use clap::{Arg, ArgAction, Command};
 use gv::parser::DotParser;
 use gv::GraphBuilder;
 use layout::backends::svg::SVGWriter;
@@ -52,40 +52,44 @@ fn generate_svg(graph: &mut VisualGraph, options: CLIOptions) {
 }
 
 fn main() {
-    let matches = App::new("Layout")
+    let matches = Command::new("Layout")
         .version("1.x")
         .arg(
-            Arg::with_name("d")
-                .short("d")
+            Arg::new("d")
+                .short('d')
                 .long("debug")
-                .help("Enables debug options"),
+                .help("Enables debug options")
+                .action(ArgAction::SetTrue),
         )
         .arg(
-            Arg::with_name("no-layout")
+            Arg::new("no-layout")
                 .long("no-layout")
-                .help("Disable the node layout pass"),
+                .help("Disable the node layout pass")
+                .action(ArgAction::SetTrue),
         )
         .arg(
-            Arg::with_name("no-optz")
+            Arg::new("no-optz")
                 .long("no-optz")
-                .help("Disable the graph optimizations"),
+                .help("Disable the graph optimizations")
+                .action(ArgAction::SetTrue),
         )
         .arg(
-            Arg::with_name("a")
-                .short("a")
+            Arg::new("a")
+                .short('a')
                 .long("ast")
-                .help("Dump the graph AST"),
+                .help("Dump the graph AST")
+                .action(ArgAction::SetTrue),
         )
         .arg(
-            Arg::with_name("output")
-                .short("o")
+            Arg::new("output")
+                .short('o')
                 .long("output")
                 .value_name("FILE")
                 .help("Path of the output file")
-                .takes_value(true),
+                .num_args(1),
         )
         .arg(
-            Arg::with_name("INPUT")
+            Arg::new("INPUT")
                 .help("Sets the input file to use")
                 .required(true)
                 .index(1),
@@ -94,18 +98,18 @@ fn main() {
 
     env_logger::builder().format_timestamp(None).init();
 
-    let dump_ast = matches.occurrences_of("a") != 0;
+    let dump_ast = matches.get_flag("a");
 
     let mut cli = CLIOptions::new();
-    cli.debug_mode = matches.occurrences_of("d") != 0;
-    cli.disable_opt = matches.occurrences_of("no-optz") != 0;
-    cli.disable_layout = matches.occurrences_of("no-layout") != 0;
+    cli.debug_mode = matches.get_flag("d");
+    cli.disable_opt = matches.get_flag("no-optz");
+    cli.disable_layout = matches.get_flag("no-layout");
     cli.output_path = matches
-        .value_of("output")
-        .unwrap_or("/tmp/out.svg")
-        .to_string();
+        .get_one::<String>("output")
+        .cloned()
+        .unwrap_or_else(|| String::from("/tmp/out.svg"));
 
-    let input_path = matches.value_of("INPUT").unwrap();
+    let input_path = matches.get_one::<String>("INPUT").unwrap();
     let contents = fs::read_to_string(input_path).expect("Can't open the file");
     let mut parser = DotParser::new(&contents);
 
