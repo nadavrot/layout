@@ -132,8 +132,8 @@ pub struct Arrow {
     pub dst_port: Option<String>,
 }
 
-impl Arrow {
-    pub fn default() -> Arrow {
+impl Default for Arrow {
+    fn default() -> Arrow {
         Arrow {
             start: LineEndKind::None,
             end: LineEndKind::Arrow,
@@ -144,7 +144,9 @@ impl Arrow {
             dst_port: Option::None,
         }
     }
+}
 
+impl Arrow {
     pub fn reverse(&self) -> Arrow {
         Arrow {
             start: self.end,

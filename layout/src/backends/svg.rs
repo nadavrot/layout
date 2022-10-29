@@ -157,7 +157,7 @@ impl RenderBackend for SVGWriter {
             clip_option = format!("clip-path=\"url(#C{})\"", clip_id);
         }
 
-        let fill_color = look.fill_color.unwrap_or(Color::transparent());
+        let fill_color = look.fill_color.unwrap_or_else(Color::transparent);
         let stroke_width = look.line_width;
         let stroke_color = look.line_color;
         let rounded_px = look.rounded;
@@ -179,7 +179,7 @@ impl RenderBackend for SVGWriter {
 
     fn draw_circle(&mut self, xy: Point, size: Point, look: &StyleAttr) {
         self.grow_window(xy, size);
-        let fill_color = look.fill_color.unwrap_or(Color::transparent());
+        let fill_color = look.fill_color.unwrap_or_else(Color::transparent);
         let stroke_width = look.line_width;
         let stroke_color = look.line_color;
 
