@@ -152,7 +152,7 @@ impl GraphBuilder {
             self.node_attr.insert(&att.0, &att.1);
         }
 
-        let _ = self.init_node_with_name(&n.id.name, true);
+        self.init_node_with_name(&n.id.name, true);
         self.node_attr.pop();
     }
 

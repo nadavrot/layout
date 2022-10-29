@@ -84,7 +84,7 @@ impl Lexer {
         if !self.has_next() {
             self.ch = '\0';
         } else {
-            self.ch = self.input[self.pos] as char;
+            self.ch = self.input[self.pos];
             self.pos += 1;
         }
     }

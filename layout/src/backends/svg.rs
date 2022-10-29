@@ -251,12 +251,12 @@ impl RenderBackend for SVGWriter {
         let start = if head.0 {
             "marker-start=\"url(#startarrow)\""
         } else {
-            &""
+            ""
         };
         let end = if head.1 {
             "marker-end=\"url(#endarrow)\""
         } else {
-            &""
+            ""
         };
 
         let mut path_builder = String::new();
