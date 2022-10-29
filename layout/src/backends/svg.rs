@@ -6,7 +6,7 @@ use crate::core::geometry::Point;
 use crate::core::style::StyleAttr;
 use std::collections::HashMap;
 
-static SVG_HAEDER: &str =
+static SVG_HEADER: &str =
     r#"<?xml version="1.0" encoding="UTF-8" standalone="no"?>"#;
 
 static SVG_DEFS: &str = r#"<defs>
@@ -124,7 +124,7 @@ impl SVGWriter {
 
     pub fn finalize(&self) -> String {
         let mut result = String::new();
-        result.push_str(SVG_HAEDER);
+        result.push_str(SVG_HEADER);
 
         let svg_line = format!(
             "<svg width=\"{}\" height=\"{}\" viewBox=\"0 0 {} {}\
