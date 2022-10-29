@@ -102,7 +102,7 @@ fn get_record_port_location(
             &mut self,
             loc: Point,
             size: Point,
-            _label: &String,
+            _label: &str,
             port: &Option<String>,
         ) {
             if let Option::Some(port_name) = port {
@@ -159,10 +159,10 @@ fn render_record(
             &mut self,
             loc: Point,
             _size: Point,
-            label: &String,
+            label: &str,
             _port: &Option<String>,
         ) {
-            self.canvas.draw_text(loc, label.as_str(), &self.look);
+            self.canvas.draw_text(loc, label, &self.look);
         }
     }
 
@@ -191,7 +191,7 @@ pub trait RecordVisitor {
         &mut self,
         loc: Point,
         size: Point,
-        label: &String,
+        label: &str,
         port: &Option<String>,
     );
 }
@@ -476,21 +476,14 @@ pub fn render_arrow(
         }
     }
 
-    let dash;
-    match arrow.line_style {
+    let dash = match arrow.line_style {
         LineStyleKind::None => {
             return;
         }
-        LineStyleKind::Normal => {
-            dash = false;
-        }
-        LineStyleKind::Dashed => {
-            dash = true;
-        }
-        LineStyleKind::Dotted => {
-            dash = true;
-        }
-    }
+        LineStyleKind::Normal => false,
+        LineStyleKind::Dashed => true,
+        LineStyleKind::Dotted => true,
+    };
 
     let start = matches!(arrow.start, LineEndKind::Arrow);
     let end = matches!(arrow.end, LineEndKind::Arrow);

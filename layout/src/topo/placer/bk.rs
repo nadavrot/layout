@@ -172,12 +172,11 @@ impl<'a> Scheduler<'a> {
             let last = self.last_x_for_row[level];
             let pos = self.vg.pos(*elem);
 
-            let offset;
-            if self.order.is_left_to_right() {
-                offset = pos.distance_to_left(true);
+            let offset = if self.order.is_left_to_right() {
+                pos.distance_to_left(true)
             } else {
-                offset = pos.distance_to_right(true);
-            }
+                pos.distance_to_right(true)
+            };
 
             if self.order.is_left_to_right() {
                 last_offset_x = last_offset_x.max(last + offset);
@@ -306,8 +305,8 @@ impl<'a> BK<'a> {
     /// a vector of edges that don't cross the strong edges (from, to).
     fn extract_edges_with_no_type2_conflict(
         &self,
-        r0: &Vec<NodeHandle>,
-        r1: &Vec<NodeHandle>,
+        r0: &[NodeHandle],
+        r1: &[NodeHandle],
     ) -> Vec<(NodeHandle, NodeHandle)> {
         let mut regular_edges: Vec<EdgeIdxs> = Vec::new();
         let mut strong_edges: Vec<EdgeIdxs> = Vec::new();
@@ -391,7 +390,7 @@ impl<'a> BK<'a> {
     }
 
     /// \returns the index of \p elem in \p vec.
-    fn index_of(elem: NodeHandle, vec: &Vec<NodeHandle>) -> Option<usize> {
+    fn index_of(elem: NodeHandle, vec: &[NodeHandle]) -> Option<usize> {
         (0..vec.len()).find(|&i| vec[i] == elem)
     }
 

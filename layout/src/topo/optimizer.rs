@@ -113,8 +113,8 @@ impl<'a> EdgeCrossOptimizer<'a> {
 
     fn count_crossing_in_rows(
         &self,
-        first: &Vec<NodeHandle>,
-        second: &Vec<NodeHandle>,
+        first: &[NodeHandle],
+        second: &[NodeHandle],
     ) -> usize {
         if first.len() < 2 {
             return 0;

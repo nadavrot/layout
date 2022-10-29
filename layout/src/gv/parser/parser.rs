@@ -302,18 +302,13 @@ impl DotParser {
         let mut es = ast::EdgeStmt::new(id);
 
         while self.is_edge_token() {
-            let ak: ast::ArrowKind;
-            match self.tok {
-                Token::ArrowLine => {
-                    ak = ast::ArrowKind::Line;
-                }
-                Token::ArrowRight => {
-                    ak = ast::ArrowKind::Arrow;
-                }
+            let ak = match self.tok {
+                Token::ArrowLine => ast::ArrowKind::Line,
+                Token::ArrowRight => ast::ArrowKind::Arrow,
                 _ => {
                     return to_error("Expected '->' or '--' ");
                 }
-            }
+            };
             // Consume the arrow.
             self.lex();
             let id = self.parse_node_id()?;

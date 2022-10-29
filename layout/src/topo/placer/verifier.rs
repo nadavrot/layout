@@ -13,10 +13,10 @@ fn verify_order_in_rank(vg: &mut VisualGraph) {
             continue;
         }
 
-        let first_node = current_row[0];
+        let mut node_iter = current_row.iter().copied();
+        let first_node = node_iter.next().unwrap();
 
-        for i in 1..num_elements - 1 {
-            let curr_node = current_row[i];
+        for curr_node in node_iter {
             let bb0 = vg.pos(first_node).bbox(true);
             let bb1 = vg.pos(curr_node).bbox(true);
             assert!(!do_boxs_intersect(bb0, bb1), "Boxes must not intersect");
