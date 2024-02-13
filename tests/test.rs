@@ -109,6 +109,18 @@ mod tests {
     }
 
     #[test]
+    fn catch_unterminated_str() {
+        let mut lexer = Lexer::from_string("digraph { a -> b; \" } ");
+        assert!(matches!(lexer.next_token(), Token::DigraphKW));
+        assert!(matches!(lexer.next_token(), Token::OpenBrace));
+        assert!(matches!(lexer.next_token(), Token::Identifier(_)));
+        assert!(matches!(lexer.next_token(), Token::ArrowRight));
+        assert!(matches!(lexer.next_token(), Token::Identifier(_)));
+        assert!(matches!(lexer.next_token(), Token::Semicolon));
+        assert!(matches!(lexer.next_token(), Token::Error(_)));
+    }
+
+    #[test]
     fn lex_program() {
         let program = get_sample_program2();
         let mut lexer = Lexer::from_string(&program[..]);

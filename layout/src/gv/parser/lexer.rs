@@ -160,7 +160,7 @@ impl Lexer {
         result
     }
 
-    pub fn read_string(&mut self) -> String {
+    pub fn read_string(&mut self) -> Token {
         let mut result = String::new();
         self.read_char();
         while self.ch != '"' {
@@ -173,11 +173,14 @@ impl Lexer {
                     'l' => '\n',
                     _ => self.ch,
                 }
+            } else if self.ch == '\0' {
+                // Reached EOF without completing the string
+                return Token::Error(self.pos);
             }
             result.push(self.ch);
             self.read_char();
         }
-        result
+        Token::Identifier(result)
     }
 
     pub fn next_token(&mut self) -> Token {
@@ -209,8 +212,7 @@ impl Lexer {
                 tok = Token::Comma;
             }
             '"' => {
-                let value = self.read_string();
-                tok = Token::Identifier(value);
+                tok = self.read_string();
             }
             '-' => {
                 self.read_char();
