@@ -13,6 +13,9 @@ pub struct DAG {
 
     /// Places nodes in levels.
     ranks: RankType,
+
+    /// Perform validation checks.
+    validate: bool,
 }
 
 /// Used by users to keep track of nodes that are saved in the DAG.
@@ -78,7 +81,12 @@ impl DAG {
         DAG {
             nodes: Vec::new(),
             ranks: Vec::new(),
+            validate: true,
         }
+    }
+
+    pub fn set_validate(&mut self, validate: bool) {
+        self.validate = validate;
     }
 
     pub fn clear(&mut self) {
@@ -163,24 +171,26 @@ impl DAG {
     }
 
     pub fn verify(&self) {
-        // Check that the node indices are valid.
-        for node in &self.nodes {
-            for edge in &node.successors {
-                assert!(edge.idx < self.nodes.len());
+        if self.validate {
+            // Check that the node indices are valid.
+            for node in &self.nodes {
+                for edge in &node.successors {
+                    assert!(edge.idx < self.nodes.len());
+                }
             }
-        }
 
-        // Check that the graph is a DAG.
-        for (i, node) in self.nodes.iter().enumerate() {
-            let from = NodeHandle::from(i);
-            for dest in node.successors.iter() {
-                let reachable = self.is_reachable(*dest, from) && from != *dest;
-                assert!(!reachable, "We found a cycle!");
+            // Check that the graph is a DAG.
+            for (i, node) in self.nodes.iter().enumerate() {
+                let from = NodeHandle::from(i);
+                for dest in node.successors.iter() {
+                    let reachable = self.is_reachable(*dest, from) && from != *dest;
+                    assert!(!reachable, "We found a cycle!");
+                }
             }
-        }
 
-        // Make sure that all of the nodes are in ranks.
-        assert_eq!(self.count_nodes_in_ranks(), self.len());
+            // Make sure that all of the nodes are in ranks.
+            assert_eq!(self.count_nodes_in_ranks(), self.len());
+        }
     }
 
     pub fn len(&self) -> usize {
