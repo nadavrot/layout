@@ -18,5 +18,8 @@ repository = "https://github.com/nadavrot/layout"
 [lib]
 name = "layout"
 
+[features]
+log = ["dep:log"]
+
 [dependencies]
 log = { version = "0.4.17", optional = true }
