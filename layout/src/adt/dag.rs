@@ -183,7 +183,8 @@ impl DAG {
             for (i, node) in self.nodes.iter().enumerate() {
                 let from = NodeHandle::from(i);
                 for dest in node.successors.iter() {
-                    let reachable = self.is_reachable(*dest, from) && from != *dest;
+                    let reachable =
+                        self.is_reachable(*dest, from) && from != *dest;
                     assert!(!reachable, "We found a cycle!");
                 }
             }
