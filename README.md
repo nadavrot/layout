@@ -9,8 +9,8 @@ can parse Graphviz dot files and render them.
 Add the following to `Cargo.toml`:
 
 ```toml
-layout-rs = "0.1.1" # or
-layout-rs = { version = "0.1.1", features = ["log"] }
+layout-rs = "0.1.2" # or
+layout-rs = { version = "0.1.2", features = ["log"] }
 ```
 
 Load, parse and print the AST:
