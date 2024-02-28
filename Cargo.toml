@@ -1,6 +1,6 @@
 [package]
 name = "layout-cli"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Nadav Rotem <nadav256@gmail.com>"]
 edition = "2018"
 description = "A graph visualization program"
@@ -25,7 +25,7 @@ bench = false
 members = ["layout"]
 
 [dependencies]
-layout-rs = { path = "layout", features = ["log"], version = "0.1.1" }
+layout-rs = { path = "layout", features = ["log"], version = "0.1.2" }
 clap = "4.0.18"
 log = "0.4.17"
 env_logger = "0.9"
