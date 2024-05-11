@@ -166,7 +166,6 @@ impl DotParser {
                         Result::Ok(ns)
                     }
                     _ => {
-                        println!("{:?}", self.tok);
                         to_error("Unsupported token")
                     }
                 }
@@ -205,7 +204,6 @@ impl DotParser {
             }
 
             _ => {
-                println!("{:?}", self.tok);
                 to_error("Unknown token")
             }
         }
