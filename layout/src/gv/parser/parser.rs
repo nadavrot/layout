@@ -165,9 +165,7 @@ impl DotParser {
                         let ns = ast::Stmt::Node(ns);
                         Result::Ok(ns)
                     }
-                    _ => {
-                        to_error("Unsupported token")
-                    }
+                    _ => to_error("Unsupported token"),
                 }
             }
             Token::SubgraphKW => {
@@ -203,9 +201,7 @@ impl DotParser {
                 Result::Ok(ast::Stmt::SubGraph(graph))
             }
 
-            _ => {
-                to_error("Unknown token")
-            }
+            _ => to_error("Unknown token"),
         }
     }
     //attr_list : '[' [ a_list ] ']' [ attr_list ]
