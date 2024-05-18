@@ -163,8 +163,10 @@ impl RenderBackend for SVGWriter {
         let stroke_color = look.line_color;
         let rounded_px = look.rounded;
         let line1 = format!(
-            "<rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" fill=\"{}\" 
-            stroke-width=\"{}\" stroke=\"{}\" rx=\"{}\" {} {}/>\n",
+            "<g {props}>\n
+            <rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" fill=\"{}\" 
+            stroke-width=\"{}\" stroke=\"{}\" rx=\"{}\" {} />\n
+            </g>\n",
             xy.x,
             xy.y,
             size.x,
@@ -173,8 +175,7 @@ impl RenderBackend for SVGWriter {
             stroke_width,
             stroke_color.to_web_color(),
             rounded_px,
-            clip_option,
-            props,
+            clip_option
         );
         self.content.push_str(&line1);
     }
@@ -192,16 +193,17 @@ impl RenderBackend for SVGWriter {
         let stroke_color = look.line_color;
         let props = properties.unwrap_or_default();
         let line1 = format!(
-            "<ellipse cx=\"{}\" cy=\"{}\" rx=\"{}\" ry=\"{}\" fill=\"{}\" 
-            stroke-width=\"{}\" stroke=\"{}\" {}/>\n",
+            "<g {props}>\n
+            <ellipse cx=\"{}\" cy=\"{}\" rx=\"{}\" ry=\"{}\" fill=\"{}\" 
+            stroke-width=\"{}\" stroke=\"{}\"/>\n
+            </g>\n",
             xy.x,
             xy.y,
             size.x / 2.,
             size.y / 2.,
             fill_color.to_web_color(),
             stroke_width,
-            stroke_color.to_web_color(),
-                props,
+            stroke_color.to_web_color()
         );
         self.content.push_str(&line1);
     }
@@ -211,6 +213,7 @@ impl RenderBackend for SVGWriter {
         xy: Point,
         text: &str,
         look: &StyleAttr,
+        
     ) {
         let len = text.len();
 
@@ -301,17 +304,18 @@ impl RenderBackend for SVGWriter {
         let stroke_color = look.line_color;
         let props = properties.unwrap_or_default();
         let line = format!(
-            "<path id=\"arrow{}\" d=\"{}\" \
+            "<g {props}>\n
+            <path id=\"arrow{}\" d=\"{}\" \
             stroke=\"{}\" stroke-width=\"{}\" {} {} {} 
-            fill=\"transparent\" {} />\n",
+            fill=\"transparent\" />\n
+            </g>\n",
             self.counter,
             path_builder.as_str(),
             stroke_color.to_web_color(),
             stroke_width,
             dash,
             start,
-            end,
-            props
+            end
         );
         self.content.push_str(&line);
 
@@ -332,15 +336,16 @@ impl RenderBackend for SVGWriter {
         let stroke_color = look.line_color;
         let props = properties.unwrap_or_default();
         let line1 = format!(
-            "<line x1=\"{}\" y1=\"{}\" x2=\"{}\" y2=\"{}\" stroke-width=\"{}\"
-             stroke=\"{}\" {} />\n",
+            "<g {props}>\n
+             <line x1=\"{}\" y1=\"{}\" x2=\"{}\" y2=\"{}\" stroke-width=\"{}\"
+             stroke=\"{}\" />\n
+             </g>\n",
             start.x,
             start.y,
             stop.x,
             stop.y,
             stroke_width,
-            stroke_color.to_web_color(),
-            props
+            stroke_color.to_web_color()
         );
         self.content.push_str(&line1);
     }
