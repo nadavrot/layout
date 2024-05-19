@@ -208,13 +208,7 @@ impl RenderBackend for SVGWriter {
         self.content.push_str(&line1);
     }
 
-    fn draw_text(
-        &mut self,
-        xy: Point,
-        text: &str,
-        look: &StyleAttr,
-        
-    ) {
+    fn draw_text(&mut self, xy: Point, text: &str, look: &StyleAttr) {
         let len = text.len();
 
         let font_class = self.get_or_create_font_style(look.font_size);
@@ -331,7 +325,13 @@ impl RenderBackend for SVGWriter {
         self.counter += 1;
     }
 
-    fn draw_line(&mut self, start: Point, stop: Point, look: &StyleAttr,properties: Option<String>) {
+    fn draw_line(
+        &mut self,
+        start: Point,
+        stop: Point,
+        look: &StyleAttr,
+        properties: Option<String>,
+    ) {
         let stroke_width = look.line_width;
         let stroke_color = look.line_color;
         let props = properties.unwrap_or_default();

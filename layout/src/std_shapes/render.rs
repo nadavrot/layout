@@ -151,7 +151,8 @@ fn render_record(
             self.canvas.draw_rect(
                 Point::new(loc.x - size.x / 2., loc.y - size.y / 2.),
                 Point::new(size.x, size.y),
-                &self.look,Option::None,
+                &self.look,
+                Option::None,
                 self.clip_handle,
             );
         }
@@ -180,7 +181,8 @@ fn render_record(
     canvas.draw_rect(
         Point::new(loc.x - size.x / 2., loc.y - size.y / 2.),
         Point::new(size.x, size.y),
-        &look,Option::None,
+        &look,
+        Option::None,
         Option::None,
     );
 }
@@ -478,9 +480,19 @@ pub fn render_arrow(
 
     if debug {
         for seg in &path {
-            canvas.draw_line(seg.0, seg.1, &StyleAttr::debug2(),Option::None,);
-            canvas.draw_circle(seg.0, Point::new(6., 6.), &StyleAttr::debug1(),Option::None,);
-            canvas.draw_circle(seg.1, Point::new(6., 6.), &StyleAttr::debug1(),Option::None,);
+            canvas.draw_line(seg.0, seg.1, &StyleAttr::debug2(), Option::None);
+            canvas.draw_circle(
+                seg.0,
+                Point::new(6., 6.),
+                &StyleAttr::debug1(),
+                Option::None,
+            );
+            canvas.draw_circle(
+                seg.1,
+                Point::new(6., 6.),
+                &StyleAttr::debug1(),
+                Option::None,
+            );
         }
     }
 
@@ -496,5 +508,12 @@ pub fn render_arrow(
     let start = matches!(arrow.start, LineEndKind::Arrow);
     let end = matches!(arrow.end, LineEndKind::Arrow);
 
-    canvas.draw_arrow(&path, dash, (start, end), &arrow.look, arrow.properties.clone(),&arrow.text);
+    canvas.draw_arrow(
+        &path,
+        dash,
+        (start, end),
+        &arrow.look,
+        arrow.properties.clone(),
+        &arrow.text,
+    );
 }

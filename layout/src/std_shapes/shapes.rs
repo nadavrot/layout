@@ -101,20 +101,11 @@ impl Element {
         look: StyleAttr,
         orientation: Orientation,
         size: Point,
-        properties:impl Into<String>,
+        properties: impl Into<String>,
     ) -> Element {
-        Element {
-            shape,
-            look,
-            orientation,
-            pos: Position::new(
-                Point::zero(),
-                size,
-                Point::zero(),
-                Point::splat(PADDING),
-            ),
-            properties: Option::Some(properties.into()),
-        }
+        let mut elem = Element::create(shape, look, orientation, size);
+        elem.properties = Option::Some(properties.into());
+        elem
     }
     pub fn create_connector(
         label: &str,
@@ -207,14 +198,13 @@ impl Arrow {
         }
     }
 
-
     pub fn with_properties(
         start: LineEndKind,
         end: LineEndKind,
         line_style: LineStyleKind,
         text: &str,
         look: &StyleAttr,
-        properties:impl Into<String>,
+        properties: impl Into<String>,
         src_port: &Option<String>,
         dst_port: &Option<String>,
     ) -> Arrow {
@@ -242,17 +232,13 @@ impl Arrow {
         )
     }
 
-    pub fn simple_with_properties(text: &str,properties:impl Into<String>) -> Arrow {
-        Arrow::with_properties(
-            LineEndKind::None,
-            LineEndKind::Arrow,
-            LineStyleKind::Normal,
-            text,
-            &StyleAttr::simple(),
-            properties,
-            &None,
-            &None,
-        )
+    pub fn simple_with_properties(
+        text: &str,
+        properties: impl Into<String>,
+    ) -> Arrow {
+        let mut arrow = Arrow::simple(text);
+        arrow.properties = Some(properties.into());
+        arrow
     }
 
     pub fn invisible() -> Arrow {
