@@ -65,7 +65,7 @@ pub trait RenderBackend {
         &mut self,
         xy: Point,
         size: Point,
-        look: &StyleAttr, 
+        look: &StyleAttr,
         url: Option<&str>,
         clip: Option<ClipHandle>,
     );
@@ -74,7 +74,13 @@ pub trait RenderBackend {
     fn draw_line(&mut self, start: Point, stop: Point, look: &StyleAttr);
 
     /// Draw an ellipse with the center \p xy, and size \p size.
-    fn draw_circle(&mut self, xy: Point, size: Point, look: &StyleAttr, url: Option<&str>);
+    fn draw_circle(
+        &mut self,
+        xy: Point,
+        size: Point,
+        look: &StyleAttr,
+        url: Option<&str>,
+    );
 
     /// Draw a labe.
     fn draw_text(&mut self, xy: Point, text: &str, look: &StyleAttr);

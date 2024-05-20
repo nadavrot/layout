@@ -153,7 +153,7 @@ fn render_record(
             self.canvas.draw_rect(
                 Point::new(loc.x - size.x / 2., loc.y - size.y / 2.),
                 Point::new(size.x, size.y),
-                &self.look, 
+                &self.look,
                 self.url,
                 self.clip_handle,
             );
@@ -184,7 +184,7 @@ fn render_record(
     canvas.draw_rect(
         Point::new(loc.x - size.x / 2., loc.y - size.y / 2.),
         Point::new(size.x, size.y),
-        &look, 
+        &look,
         url,
         Option::None,
     );
@@ -284,7 +284,7 @@ impl Renderable for Element {
             canvas.draw_rect(
                 bb.0,
                 self.pos.size(true),
-                &debug_look, 
+                &debug_look,
                 None,
                 Option::None,
             );
@@ -485,8 +485,18 @@ pub fn render_arrow(
     if debug {
         for seg in &path {
             canvas.draw_line(seg.0, seg.1, &StyleAttr::debug2());
-            canvas.draw_circle(seg.0, Point::new(6., 6.), &StyleAttr::debug1(), Option::None);
-            canvas.draw_circle(seg.1, Point::new(6., 6.), &StyleAttr::debug1(), Option::None);
+            canvas.draw_circle(
+                seg.0,
+                Point::new(6., 6.),
+                &StyleAttr::debug1(),
+                Option::None,
+            );
+            canvas.draw_circle(
+                seg.1,
+                Point::new(6., 6.),
+                &StyleAttr::debug1(),
+                Option::None,
+            );
         }
     }
 

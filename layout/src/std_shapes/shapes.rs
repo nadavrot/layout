@@ -121,7 +121,7 @@ impl Element {
 
     // Add an URL to form a hyperlink
     pub fn set_url(&mut self, url: String) {
-        self.url = Some(url);        
+        self.url = Some(url);
     }
 
     // Make the center of the shape point to \p to.
