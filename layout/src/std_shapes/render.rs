@@ -128,11 +128,13 @@ fn render_record(
     dir: Orientation,
     loc: Point,
     size: Point,
+    url: Option<&str>,
     look: &StyleAttr,
     canvas: &mut dyn RenderBackend,
 ) {
     struct Renderer<'a> {
         look: StyleAttr,
+        url: Option<&'a str>,
         clip_handle: Option<ClipHandle>,
         canvas: &'a mut dyn RenderBackend,
     }
@@ -151,7 +153,8 @@ fn render_record(
             self.canvas.draw_rect(
                 Point::new(loc.x - size.x / 2., loc.y - size.y / 2.),
                 Point::new(size.x, size.y),
-                &self.look,
+                &self.look, 
+                self.url,
                 self.clip_handle,
             );
         }
@@ -168,6 +171,7 @@ fn render_record(
 
     let mut visitor = Renderer {
         look: look.clone(),
+        url,
         clip_handle,
         canvas,
     };
@@ -180,7 +184,8 @@ fn render_record(
     canvas.draw_rect(
         Point::new(loc.x - size.x / 2., loc.y - size.y / 2.),
         Point::new(size.x, size.y),
-        &look,
+        &look, 
+        url,
         Option::None,
     );
 }
@@ -279,7 +284,8 @@ impl Renderable for Element {
             canvas.draw_rect(
                 bb.0,
                 self.pos.size(true),
-                &debug_look,
+                &debug_look, 
+                None,
                 Option::None,
             );
         }
@@ -292,6 +298,7 @@ impl Renderable for Element {
                     self.orientation,
                     self.pos.center(),
                     self.pos.size(false),
+                    self.url.as_deref(),
                     &self.look,
                     canvas,
                 );
@@ -301,6 +308,7 @@ impl Renderable for Element {
                     self.pos.bbox(false).0,
                     self.pos.size(false),
                     &self.look,
+                    self.url.as_deref(),
                     Option::None,
                 );
                 canvas.draw_text(self.pos.center(), text.as_str(), &self.look);
@@ -310,6 +318,7 @@ impl Renderable for Element {
                     self.pos.center(),
                     self.pos.size(false),
                     &self.look,
+                    self.url.as_deref(),
                 );
                 canvas.draw_text(self.pos.center(), text.as_str(), &self.look);
             }
@@ -318,11 +327,13 @@ impl Renderable for Element {
                     self.pos.center(),
                     self.pos.size(false),
                     &self.look,
+                    self.url.as_deref(),
                 );
                 canvas.draw_circle(
                     self.pos.center(),
                     self.pos.size(false).sub(Point::splat(15.)),
                     &self.look,
+                    Option::None,
                 );
                 canvas.draw_text(self.pos.center(), text.as_str(), &self.look);
             }
@@ -333,12 +344,14 @@ impl Renderable for Element {
                         self.pos.size(true),
                         &StyleAttr::debug0(),
                         Option::None,
+                        Option::None,
                     );
 
                     canvas.draw_rect(
                         self.pos.bbox(false).0,
                         self.pos.size(false),
                         &StyleAttr::debug1(),
+                        Option::None,
                         Option::None,
                     );
                 }
@@ -352,6 +365,7 @@ impl Renderable for Element {
                 self.pos.center(),
                 Point::new(6., 6.),
                 &StyleAttr::debug2(),
+                Option::None,
             );
         }
     }
@@ -471,8 +485,8 @@ pub fn render_arrow(
     if debug {
         for seg in &path {
             canvas.draw_line(seg.0, seg.1, &StyleAttr::debug2());
-            canvas.draw_circle(seg.0, Point::new(6., 6.), &StyleAttr::debug1());
-            canvas.draw_circle(seg.1, Point::new(6., 6.), &StyleAttr::debug1());
+            canvas.draw_circle(seg.0, Point::new(6., 6.), &StyleAttr::debug1(), Option::None);
+            canvas.draw_circle(seg.1, Point::new(6., 6.), &StyleAttr::debug1(), Option::None);
         }
     }
 

@@ -71,6 +71,7 @@ pub struct Element {
     pub shape: ShapeKind,
     pub pos: Position,
     pub look: StyleAttr,
+    pub url: Option<String>,
     pub orientation: Orientation,
 }
 
@@ -78,12 +79,14 @@ impl Element {
     pub fn create(
         shape: ShapeKind,
         look: StyleAttr,
+        url: Option<String>,
         orientation: Orientation,
         size: Point,
     ) -> Element {
         Element {
             shape,
             look,
+            url,
             orientation,
             pos: Position::new(
                 Point::zero(),
@@ -101,6 +104,7 @@ impl Element {
         Element {
             shape: ShapeKind::new_connector(label),
             look: look.clone(),
+            url: None,
             orientation: dir,
             pos: Position::new(
                 Point::zero(),
@@ -113,6 +117,11 @@ impl Element {
 
     pub fn empty_connector(dir: Orientation) -> Element {
         Self::create_connector("", &StyleAttr::simple(), dir)
+    }
+
+    // Add an URL to form a hyperlink
+    pub fn set_url(&mut self, url: String) {
+        self.url = Some(url);        
     }
 
     // Make the center of the shape point to \p to.

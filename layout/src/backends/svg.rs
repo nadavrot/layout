@@ -147,7 +147,8 @@ impl RenderBackend for SVGWriter {
         &mut self,
         xy: Point,
         size: Point,
-        look: &StyleAttr,
+        look: &StyleAttr, 
+        url: Option<&str>,
         clip: Option<ClipHandle>,
     ) {
         self.grow_window(xy, size);
@@ -174,10 +175,19 @@ impl RenderBackend for SVGWriter {
             rounded_px,
             clip_option
         );
-        self.content.push_str(&line1);
+        if let Some(url) = url {
+            let link = format!(
+                "<a href=\"{}\">\n  {}</a>\n",
+                url,
+                line1,
+            );
+            self.content.push_str(&link);
+        } else {
+            self.content.push_str(&line1);
+        }
     }
 
-    fn draw_circle(&mut self, xy: Point, size: Point, look: &StyleAttr) {
+    fn draw_circle(&mut self, xy: Point, size: Point, look: &StyleAttr, url: Option<&str>) {
         self.grow_window(xy, size);
         let fill_color = look.fill_color.unwrap_or_else(Color::transparent);
         let stroke_width = look.line_width;
@@ -194,7 +204,16 @@ impl RenderBackend for SVGWriter {
             stroke_width,
             stroke_color.to_web_color()
         );
-        self.content.push_str(&line1);
+        if let Some(url) = url {
+            let link = format!(
+                "<a href=\"{}\">\n  {}</a>\n",
+                url,
+                line1,
+            );
+            self.content.push_str(&link);
+        } else {
+            self.content.push_str(&line1);
+        }
     }
 
     fn draw_text(&mut self, xy: Point, text: &str, look: &StyleAttr) {
