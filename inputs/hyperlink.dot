@@ -1,0 +1,7 @@
+graph {
+  label="Vincent van Gogh Paintings"
+  "Self-Portrait with Grey Felt Hat" [URL="https://www.vangoghmuseum.nl/en/collection/s0016V1962", fill="white"]
+  "Self-Portrait as a Painter" [URL="https://www.vangoghmuseum.nl/en/collection/s0022V1962", fill="white"]
+  "Sunflowers" [URL="https://www.nationalgallery.org.uk/paintings/vincent-van-gogh-sunflowers", fill="white"]
+  "Almond Blossom" [URL="https://www.vangoghmuseum.nl/en/collection/s0176V1962", fill="white"]
+}

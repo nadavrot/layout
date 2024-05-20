@@ -362,6 +362,8 @@ impl GraphBuilder {
             }
         }
 
+        let url = lst.get(&"URL".to_string()).cloned();
+
         // We flip the orientation before we create the shape. In graphs that
         // grow top down the records grow to the left.
         let dir = dir.flip();
@@ -374,6 +376,6 @@ impl GraphBuilder {
             rounded_corder_value,
             font_size,
         );
-        Element::create(shape, look, dir, sz)
+        Element::create(shape, look, url, dir, sz)
     }
 }
