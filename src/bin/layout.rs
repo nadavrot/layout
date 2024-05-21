@@ -297,9 +297,9 @@ fn test7(offset_x: f64, offset_y: f64, svg: &mut SVGWriter) {
         let to = to.add(center).sub(Point::splat(200.));
 
         if segment_rect_intersection((from, to), es0.position().bbox(false)) {
-            svg.draw_line(from, to, &red);
+            svg.draw_line(from, to, &red, Option::None);
         } else {
-            svg.draw_line(from, to, &StyleAttr::simple());
+            svg.draw_line(from, to, &StyleAttr::simple(), Option::None);
         }
     }
 }

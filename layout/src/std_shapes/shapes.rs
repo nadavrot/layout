@@ -72,6 +72,7 @@ pub struct Element {
     pub pos: Position,
     pub look: StyleAttr,
     pub orientation: Orientation,
+    pub properties: Option<String>,
 }
 
 impl Element {
@@ -91,7 +92,20 @@ impl Element {
                 Point::zero(),
                 Point::splat(PADDING),
             ),
+            properties: Option::None,
         }
+    }
+
+    pub fn create_with_properties(
+        shape: ShapeKind,
+        look: StyleAttr,
+        orientation: Orientation,
+        size: Point,
+        properties: impl Into<String>,
+    ) -> Element {
+        let mut elem = Element::create(shape, look, orientation, size);
+        elem.properties = Option::Some(properties.into());
+        elem
     }
     pub fn create_connector(
         label: &str,
@@ -108,6 +122,7 @@ impl Element {
                 Point::zero(),
                 Point::splat(CONN_PADDING),
             ),
+            properties: Option::None,
         }
     }
 
@@ -128,6 +143,7 @@ pub struct Arrow {
     pub line_style: LineStyleKind,
     pub text: String,
     pub look: StyleAttr,
+    pub properties: Option<String>,
     pub src_port: Option<String>,
     pub dst_port: Option<String>,
 }
@@ -140,6 +156,7 @@ impl Default for Arrow {
             line_style: LineStyleKind::Normal,
             text: String::new(),
             look: StyleAttr::simple(),
+            properties: Option::None,
             src_port: Option::None,
             dst_port: Option::None,
         }
@@ -154,6 +171,7 @@ impl Arrow {
             line_style: self.line_style,
             text: self.text.clone(),
             look: self.look.clone(),
+            properties: self.properties.clone(),
             src_port: self.dst_port.clone(),
             dst_port: self.src_port.clone(),
         }
@@ -174,6 +192,29 @@ impl Arrow {
             line_style,
             text: String::from(text),
             look: look.clone(),
+            properties: Option::None,
+            src_port: src_port.clone(),
+            dst_port: dst_port.clone(),
+        }
+    }
+
+    pub fn with_properties(
+        start: LineEndKind,
+        end: LineEndKind,
+        line_style: LineStyleKind,
+        text: &str,
+        look: &StyleAttr,
+        properties: impl Into<String>,
+        src_port: &Option<String>,
+        dst_port: &Option<String>,
+    ) -> Arrow {
+        Arrow {
+            start,
+            end,
+            line_style,
+            text: String::from(text),
+            look: look.clone(),
+            properties: Option::Some(properties.into()),
             src_port: src_port.clone(),
             dst_port: dst_port.clone(),
         }
@@ -189,6 +230,15 @@ impl Arrow {
             &None,
             &None,
         )
+    }
+
+    pub fn simple_with_properties(
+        text: &str,
+        properties: impl Into<String>,
+    ) -> Arrow {
+        let mut arrow = Arrow::simple(text);
+        arrow.properties = Some(properties.into());
+        arrow
     }
 
     pub fn invisible() -> Arrow {

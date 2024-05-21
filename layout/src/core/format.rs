@@ -66,14 +66,27 @@ pub trait RenderBackend {
         xy: Point,
         size: Point,
         look: &StyleAttr,
+        properties: Option<String>,
         clip: Option<ClipHandle>,
     );
 
     /// Draw a line between \p start and \p stop.
-    fn draw_line(&mut self, start: Point, stop: Point, look: &StyleAttr);
+    fn draw_line(
+        &mut self,
+        start: Point,
+        stop: Point,
+        look: &StyleAttr,
+        properties: Option<String>,
+    );
 
     /// Draw an ellipse with the center \p xy, and size \p size.
-    fn draw_circle(&mut self, xy: Point, size: Point, look: &StyleAttr);
+    fn draw_circle(
+        &mut self,
+        xy: Point,
+        size: Point,
+        look: &StyleAttr,
+        properties: Option<String>,
+    );
 
     /// Draw a labe.
     fn draw_text(&mut self, xy: Point, text: &str, look: &StyleAttr);
@@ -85,6 +98,7 @@ pub trait RenderBackend {
         dashed: bool,
         head: (bool, bool),
         look: &StyleAttr,
+        properties: Option<String>,
         text: &str,
     );
 

@@ -148,6 +148,7 @@ impl RenderBackend for SVGWriter {
         xy: Point,
         size: Point,
         look: &StyleAttr,
+        properties: Option<String>,
         clip: Option<ClipHandle>,
     ) {
         self.grow_window(xy, size);
@@ -156,14 +157,16 @@ impl RenderBackend for SVGWriter {
         if let Option::Some(clip_id) = clip {
             clip_option = format!("clip-path=\"url(#C{})\"", clip_id);
         }
-
+        let props = properties.unwrap_or_default();
         let fill_color = look.fill_color.unwrap_or_else(Color::transparent);
         let stroke_width = look.line_width;
         let stroke_color = look.line_color;
         let rounded_px = look.rounded;
         let line1 = format!(
-            "<rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" fill=\"{}\" 
-            stroke-width=\"{}\" stroke=\"{}\" rx=\"{}\" {} />\n",
+            "<g {props}>\n
+            <rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" fill=\"{}\" 
+            stroke-width=\"{}\" stroke=\"{}\" rx=\"{}\" {} />\n
+            </g>\n",
             xy.x,
             xy.y,
             size.x,
@@ -177,15 +180,23 @@ impl RenderBackend for SVGWriter {
         self.content.push_str(&line1);
     }
 
-    fn draw_circle(&mut self, xy: Point, size: Point, look: &StyleAttr) {
+    fn draw_circle(
+        &mut self,
+        xy: Point,
+        size: Point,
+        look: &StyleAttr,
+        properties: Option<String>,
+    ) {
         self.grow_window(xy, size);
         let fill_color = look.fill_color.unwrap_or_else(Color::transparent);
         let stroke_width = look.line_width;
         let stroke_color = look.line_color;
-
+        let props = properties.unwrap_or_default();
         let line1 = format!(
-            "<ellipse cx=\"{}\" cy=\"{}\" rx=\"{}\" ry=\"{}\" fill=\"{}\" 
-            stroke-width=\"{}\" stroke=\"{}\"/>\n",
+            "<g {props}>\n
+            <ellipse cx=\"{}\" cy=\"{}\" rx=\"{}\" ry=\"{}\" fill=\"{}\" 
+            stroke-width=\"{}\" stroke=\"{}\"/>\n
+            </g>\n",
             xy.x,
             xy.y,
             size.x / 2.,
@@ -233,6 +244,7 @@ impl RenderBackend for SVGWriter {
         dashed: bool,
         head: (bool, bool),
         look: &StyleAttr,
+        properties: Option<String>,
         text: &str,
     ) {
         // Control points as defined in here:
@@ -284,11 +296,13 @@ impl RenderBackend for SVGWriter {
 
         let stroke_width = look.line_width;
         let stroke_color = look.line_color;
-
+        let props = properties.unwrap_or_default();
         let line = format!(
-            "<path id=\"arrow{}\" d=\"{}\" \
+            "<g {props}>\n
+            <path id=\"arrow{}\" d=\"{}\" \
             stroke=\"{}\" stroke-width=\"{}\" {} {} {} 
-            fill=\"transparent\" />\n",
+            fill=\"transparent\" />\n
+            </g>\n",
             self.counter,
             path_builder.as_str(),
             stroke_color.to_web_color(),
@@ -311,12 +325,21 @@ impl RenderBackend for SVGWriter {
         self.counter += 1;
     }
 
-    fn draw_line(&mut self, start: Point, stop: Point, look: &StyleAttr) {
+    fn draw_line(
+        &mut self,
+        start: Point,
+        stop: Point,
+        look: &StyleAttr,
+        properties: Option<String>,
+    ) {
         let stroke_width = look.line_width;
         let stroke_color = look.line_color;
+        let props = properties.unwrap_or_default();
         let line1 = format!(
-            "<line x1=\"{}\" y1=\"{}\" x2=\"{}\" y2=\"{}\" stroke-width=\"{}\"
-             stroke=\"{}\" />\n",
+            "<g {props}>\n
+             <line x1=\"{}\" y1=\"{}\" x2=\"{}\" y2=\"{}\" stroke-width=\"{}\"
+             stroke=\"{}\" />\n
+             </g>\n",
             start.x,
             start.y,
             stop.x,
