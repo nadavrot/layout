@@ -56,7 +56,7 @@ Error: Expected an identifier.
 Build the crate and render some dot files with the command
 
 ```bash
-cargo run --bin run ./inputs/bk.dot -o output.svg
+cargo run --bin layout ./inputs/bk.dot -o output.svg
 ```
 
 ## Gallery
