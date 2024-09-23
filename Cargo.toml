@@ -16,11 +16,6 @@ name = "layout"
 test = false
 bench = false
 
-[[bin]]
-name = "run"
-test = false
-bench = false
-
 [workspace]
 members = ["layout"]
 

@@ -54,6 +54,11 @@ jobs:
           command: test
           args: --workspace
 
+      - uses: actions-rs/cargo@v1
+        with:
+          command: run
+          args: --example tests
+
   build_and_test_windows:
     name: Build and Test (Windows)
     runs-on: windows-latest
@@ -73,3 +78,8 @@ jobs:
         with:
           command: test
           args: --workspace
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: run
+          args: --example tests  
