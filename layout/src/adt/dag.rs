@@ -265,8 +265,8 @@ impl DAG {
             worklist.push((n, false));
         }
 
-        while !worklist.is_empty() {
-            let (current, cmd) = worklist.pop().unwrap();
+        while let Some((current, cmd)) = worklist.pop() {
+            
 
             // Handle 'push' commands.
             if cmd {
