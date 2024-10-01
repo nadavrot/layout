@@ -50,6 +50,7 @@ fn escape_string(x: &str) -> String {
     res
 }
 
+#[derive(Debug)]
 pub struct SVGWriter {
     content: String,
     view_size: Point,

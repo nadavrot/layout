@@ -22,6 +22,7 @@ use std::vec;
 
 use super::placer::Placer;
 
+#[derive(Debug)]
 pub struct VisualGraph {
     // Holds all of the elements in the graph.
     nodes: Vec<Element>,

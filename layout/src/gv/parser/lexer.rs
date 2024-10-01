@@ -23,6 +23,7 @@ pub enum Token {
     Error(usize),
 }
 
+#[derive(Debug)]
 pub struct Lexer {
     input: Vec<char>,
     pub pos: usize,

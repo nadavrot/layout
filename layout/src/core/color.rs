@@ -151,7 +151,7 @@ static KNOWN_COLORS: [(&str, u32); 148] = [
     ("yellowgreen", 0x9acd32),
 ];
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Color {
     // Color in the format RGBA
     color: u32,

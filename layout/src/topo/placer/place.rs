@@ -11,6 +11,7 @@ use crate::topo::placer::move_between_rows;
 use crate::topo::placer::simple;
 use crate::topo::placer::verifier;
 
+#[derive(Debug)]
 pub struct Placer<'a> {
     vg: &'a mut VisualGraph,
 }
