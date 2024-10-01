@@ -186,7 +186,11 @@ impl Color {
         if name.starts_with('#') {
             let name = name.trim_start_matches('#');
             if let Result::Ok(color) = u32::from_str_radix(name, 16) {
-                return Some(Color::new((color << 8) + 0xff));
+                if name.len() <= 7 {
+                    return Some(Color::new((color << 8) + 0xff));
+                } else {
+                    return Some(Color::new(color));
+                }
             }
         }
         None
@@ -207,4 +211,6 @@ fn test_color() {
 
     let color = Color::from_name("#112233");
     assert_eq!(color.unwrap().to_web_color(), "#112233ff");
+    let color = Color::from_name("#112233FA");
+    assert_eq!(color.unwrap().to_web_color(), "#112233fa");
 }
