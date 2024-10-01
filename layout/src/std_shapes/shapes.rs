@@ -12,13 +12,13 @@ use crate::std_shapes::render::get_shape_size;
 const PADDING: f64 = 60.;
 const CONN_PADDING: f64 = 10.;
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub enum LineEndKind {
     None,
     Arrow,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum RecordDef {
     // Label, port:
     Text(String, Option<String>),
@@ -35,7 +35,7 @@ impl RecordDef {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum ShapeKind {
     None,
     Box(String),
@@ -66,7 +66,7 @@ impl ShapeKind {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Element {
     pub shape: ShapeKind,
     pub pos: Position,
@@ -136,7 +136,7 @@ impl Element {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Arrow {
     pub start: LineEndKind,
     pub end: LineEndKind,

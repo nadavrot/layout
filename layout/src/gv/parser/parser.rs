@@ -2,6 +2,7 @@ use super::ast;
 use super::lexer::Lexer;
 use super::lexer::Token;
 
+#[derive(Debug)]
 pub struct DotParser {
     lexer: Lexer,
     tok: Token,

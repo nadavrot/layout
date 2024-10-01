@@ -19,6 +19,7 @@ type PropertyList = HashMap<String, String>;
 // AST into the VisualGraph data-structure that we use for layout and rendering
 // of the graph.
 
+#[derive(Debug)]
 struct EdgeDesc {
     from: String,
     to: String,
@@ -29,6 +30,7 @@ struct EdgeDesc {
 }
 
 /// This class constructs a visual graph from the parsed AST.
+#[derive(Debug)]
 pub struct GraphBuilder {
     // This records the state of the top-level graph.
     global_state: PropertyList,

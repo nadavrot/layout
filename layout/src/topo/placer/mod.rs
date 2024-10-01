@@ -5,7 +5,7 @@ pub const EPSILON: f64 = 0.001;
 
 /// Categorizes blocks to visible and invisible. We use this enum to tell the
 /// passes which blocks they are allowed to touch.
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum BlockKind {
     Box,
     Connector,

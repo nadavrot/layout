@@ -6,6 +6,7 @@ use std::hash::Hash;
 
 /// Scoped map that supports inserting and removing lots of key-val pairs
 /// at once.
+#[derive(Debug)]
 pub struct ScopedMap<K, V> {
     stack: Vec<Vec<(K, V)>>,
 }

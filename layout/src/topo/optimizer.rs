@@ -10,6 +10,7 @@ use crate::core::base::Direction;
 /// This optimizations changes the order of nodes within a rank (ordering along
 /// the x-axis). The transformation tries to reduce the number of edges that
 /// cross each other.
+#[derive(Debug)]
 pub struct EdgeCrossOptimizer<'a> {
     dag: &'a mut DAG,
 }
@@ -212,6 +213,7 @@ impl<'a> EdgeCrossOptimizer<'a> {
 
 /// This optimization sinks nodes in an attempt to shorten the length of edges
 /// that run through the graph.
+#[derive(Debug)]
 pub struct RankOptimizer<'a> {
     dag: &'a mut DAG,
 }

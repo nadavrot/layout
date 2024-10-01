@@ -2,7 +2,7 @@
 
 use crate::core::color::Color;
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub enum LineStyleKind {
     Normal,
     Dashed,
@@ -10,8 +10,7 @@ pub enum LineStyleKind {
     None,
 }
 
-#[derive(Clone)]
-
+#[derive(Clone, Debug)]
 pub struct StyleAttr {
     pub line_color: Color,
     pub line_width: usize,

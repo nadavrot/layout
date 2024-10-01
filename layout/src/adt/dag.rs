@@ -7,6 +7,7 @@
 use std::cmp;
 
 /// The Ranked-DAG data structure.
+#[derive(Debug)]
 pub struct DAG {
     /// A list of nodes in the dag.
     nodes: Vec<Node>,
@@ -39,6 +40,7 @@ impl From<usize> for NodeHandle {
     }
 }
 
+#[derive(Debug)]
 struct Node {
     // Points to other edges.
     successors: Vec<NodeHandle>,
@@ -57,6 +59,7 @@ impl Node {
 }
 
 /// Node iterator for iterating over nodes in the graph.
+#[derive(Debug)]
 pub struct NodeIterator {
     curr: usize,
     last: usize,
