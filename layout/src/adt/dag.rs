@@ -269,8 +269,6 @@ impl DAG {
         }
 
         while let Some((current, cmd)) = worklist.pop() {
-            
-
             // Handle 'push' commands.
             if cmd {
                 order.push(current);
