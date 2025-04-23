@@ -299,7 +299,18 @@ pub fn in_range(range: (f64, f64), x: f64) -> bool {
 
 /// trivial function for checking aproximate equality of f64, within epsion of f64
 fn approx_eq_f64(x: f64, y: f64) -> bool {
-    (x - y).abs() < f64::EPSILON
+    if x == 0. {
+        y.abs() < f64::EPSILON
+    } else if y == 0. {
+        x.abs() < f64::EPSILON
+    } else {
+        let abs_diff = (x - y).abs();
+        if abs_diff < f64::EPSILON {
+            true
+        } else {
+            abs_diff / x.abs().max(y.abs()) < f64::EPSILON
+        }
+    }
 }
 
 /// Similar to usual smaller than or equal to op, except for equal is withint f64 epsilon
