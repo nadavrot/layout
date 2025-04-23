@@ -5,6 +5,7 @@ use crate::core::format::{ClipHandle, RenderBackend, Renderable, Visible};
 use crate::core::geometry::*;
 use crate::core::style::{LineStyleKind, StyleAttr};
 use crate::std_shapes::shapes::*;
+use crate::core::color::Color;
 
 /// Return the height and width of the record, depending on the geometry and
 /// internal text.
@@ -325,11 +326,16 @@ impl Renderable for Element {
                     &self.look,
                     self.properties.clone(),
                 );
+                let outer_circle_style = {
+                    let mut x = self.look.clone();
+                    x.fill_color = None;
+                    x
+                };
                 canvas.draw_circle(
                     self.pos.center(),
-                    self.pos.size(false).sub(Point::splat(15.)),
-                    &self.look,
-                    Option::None,
+                    self.pos.size(false).add(Point::splat(8.)),
+                    &outer_circle_style,
+                    None,
                 );
                 canvas.draw_text(self.pos.center(), text.as_str(), &self.look);
             }
