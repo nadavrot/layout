@@ -1,0 +1,12 @@
+digraph G {
+node [width=0.13,height=0.13,fontsize=10,shape=point];
+edge [fontsize=18,penwidth=1.3,arrowsize=1.3,fontname=Arial];
+rankdir=LR;
+labeljust=l;
+margin=0;
+10 -> 2 [minlen=1,color=black,label="0 (len=31,supp=56)"];
+10 -> 2 [minlen=1,color=black,label="2 (len=31,supp=20)"];
+5 -> 0 [minlen=1,color=black,label="4 (len=20,supp=27)"];
+5 -> 0 [minlen=1,color=black,label="5 (len=20,supp=12)"];
+2 -> 5 [minlen=1,color=black,label="6 (len=19,supp=51)"];
+}

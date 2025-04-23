@@ -297,10 +297,25 @@ pub fn in_range(range: (f64, f64), x: f64) -> bool {
     x >= range.0 && x <= range.1
 }
 
+/// trivial function for checking aproximate equality of f64, within epsion of f64
+fn approx_eq_f64(x: f64, y: f64) -> bool {
+    (x-y).abs() < f64::EPSILON
+}
+
+/// Similar to usual smaller than or equal to op, except for equal is withint f64 epsilon
+fn smaller_than_or_equal_to_f64(x: f64, y: f64) -> bool {
+    if x >= y {
+        false
+    } else {
+        // stricter than usual approx_eq for f64, but works ok and stricter
+        approx_eq_f64(x, y)
+    }
+}
+
 /// \return True if the boxes (defined by the bounding box) intersect.
 pub fn do_boxes_intersect(p1: (Point, Point), p2: (Point, Point)) -> bool {
-    let overlap_x = p2.0.x < p1.1.x && p1.0.x < p2.1.x;
-    let overlap_y = p2.0.y < p1.1.y && p1.0.y < p2.1.y;
+    let overlap_x = smaller_than_or_equal_to_f64(p2.0.x, p1.1.x) && smaller_than_or_equal_to_f64(p1.0.x, p2.1.x);
+    let overlap_y = smaller_than_or_equal_to_f64(p2.0.y, p1.1.y) && smaller_than_or_equal_to_f64(p1.0.y, p2.1.y);
     overlap_x && overlap_y
 }
 
