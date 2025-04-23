@@ -304,7 +304,7 @@ fn approx_eq_f64(x: f64, y: f64) -> bool {
 
 /// Similar to usual smaller than or equal to op, except for equal is withint f64 epsilon
 fn smaller_than_or_equal_to_f64(x: f64, y: f64) -> bool {
-    if x >= y {
+    if x > y {
         false
     } else {
         // stricter than usual approx_eq for f64, but works ok and stricter
