@@ -5,7 +5,6 @@ use crate::core::format::{ClipHandle, RenderBackend, Renderable, Visible};
 use crate::core::geometry::*;
 use crate::core::style::{LineStyleKind, StyleAttr};
 use crate::std_shapes::shapes::*;
-use crate::core::color::Color;
 
 /// Return the height and width of the record, depending on the geometry and
 /// internal text.
