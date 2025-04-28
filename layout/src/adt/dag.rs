@@ -435,12 +435,6 @@ impl DAG {
     pub fn level(&self, node: NodeHandle) -> usize {
         assert!(node.get_index() < self.len(), "Node not in the dag");
         self.levels[node.get_index()]
-        // for (i, row) in self.ranks.iter().enumerate() {
-        //     if row.contains(&node) {
-        //         return i;
-        //     }
-        // }
-        // panic!("Unexpected node. Is the graph ranked?");
     }
 
     /// Computes and returns the level of each node in the graph based
