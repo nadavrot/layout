@@ -15,6 +15,9 @@ pub struct DAG {
     /// Places nodes in levels.
     ranks: RankType,
 
+    /// levels info
+    levels: Vec<usize>,
+
     /// Perform validation checks.
     validate: bool,
 }
@@ -84,6 +87,7 @@ impl DAG {
         DAG {
             nodes: Vec::new(),
             ranks: Vec::new(),
+            levels: Vec::new(),
             validate: true,
         }
     }
@@ -95,6 +99,7 @@ impl DAG {
     pub fn clear(&mut self) {
         self.nodes.clear();
         self.ranks.clear();
+        self.levels.clear();
     }
 
     pub fn iter(&self) -> NodeIterator {
@@ -136,6 +141,7 @@ impl DAG {
     /// Create a new node.
     pub fn new_node(&mut self) -> NodeHandle {
         self.nodes.push(Node::new());
+        self.levels.push(0);
         let node = NodeHandle::new(self.nodes.len() - 1);
         self.add_element_to_rank(node, 0, false);
         node
@@ -145,6 +151,7 @@ impl DAG {
     pub fn new_nodes(&mut self, n: usize) {
         for _ in 0..n {
             self.nodes.push(Node::new());
+            self.levels.push(0);
             let node = NodeHandle::new(self.nodes.len() - 1);
             self.add_element_to_rank(node, 0, false);
         }
@@ -362,6 +369,7 @@ impl DAG {
         } else {
             self.ranks[level].push(elem);
         }
+        self.levels[elem.get_index()] = level;
     }
 
     /// Places all of the nodes in ranks (levels).
@@ -411,6 +419,7 @@ impl DAG {
             for i in 0..row.len() {
                 if row[i] == marker {
                     row.insert(i, node);
+                    self.levels[node.get_index()] = new_level;
                     return;
                 }
             }
@@ -418,18 +427,20 @@ impl DAG {
         }
 
         self.ranks[new_level].push(node);
+        self.levels[node.get_index()] = new_level;
         assert_eq!(self.level(node), new_level);
     }
 
     /// \returns the level of the node \p node in the rank.
     pub fn level(&self, node: NodeHandle) -> usize {
         assert!(node.get_index() < self.len(), "Node not in the dag");
-        for (i, row) in self.ranks.iter().enumerate() {
-            if row.contains(&node) {
-                return i;
-            }
-        }
-        panic!("Unexpected node. Is the graph ranked?");
+        self.levels[node.get_index()]
+        // for (i, row) in self.ranks.iter().enumerate() {
+        //     if row.contains(&node) {
+        //         return i;
+        //     }
+        // }
+        // panic!("Unexpected node. Is the graph ranked?");
     }
 
     /// Computes and returns the level of each node in the graph based
