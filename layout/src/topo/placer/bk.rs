@@ -75,8 +75,8 @@ impl NodeAttachInfo {
 
             // Find the bottom of the vertical:
             let mut idx = i;
-            while self.below[idx].is_some() {
-                idx = self.below[idx].unwrap().get_index();
+            while let Some(cur_node_handle) = self.below[idx] {
+                idx = cur_node_handle.get_index();
             }
 
             // Go up the vertical and save the nodes into the vector.
