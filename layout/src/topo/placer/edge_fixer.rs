@@ -36,7 +36,7 @@ fn compute_bounds_for_node(vg: &VisualGraph, node: NodeHandle) -> (f64, f64) {
     (leftmost, rightmost)
 }
 
-pub fn straighten_edge(vg: &mut VisualGraph) -> usize {
+fn straighten_edge(vg: &mut VisualGraph) -> usize {
     let mut cnt = 0;
 
     let mut to_straighten: Vec<NodeHandle> = Vec::new();
@@ -97,7 +97,7 @@ pub fn straighten_edge(vg: &mut VisualGraph) -> usize {
     cnt
 }
 
-pub fn handle_disconnected_nodes(vg: &mut VisualGraph) -> usize {
+fn handle_disconnected_nodes(vg: &mut VisualGraph) -> usize {
     let mut cnt = 0;
 
     for row_idx in 0..vg.dag.num_levels() {
@@ -131,7 +131,7 @@ pub fn handle_disconnected_nodes(vg: &mut VisualGraph) -> usize {
     cnt
 }
 
-pub fn align_self_edges(vg: &mut VisualGraph) -> usize {
+fn align_self_edges(vg: &mut VisualGraph) -> usize {
     let mut cnt = 0;
 
     for row_idx in 0..vg.dag.num_levels() {
@@ -190,7 +190,7 @@ fn is_intersecting_any(segs: &[Segment], rects: &[Rect]) -> bool {
     false
 }
 
-pub fn adjust_crossing_edges(vg: &mut VisualGraph) -> usize {
+fn adjust_crossing_edges(vg: &mut VisualGraph) -> usize {
     let mut cnt = 0;
     // A list of nodes to adjust, and the dy.
     let mut to_move: Vec<(NodeHandle, Point)> = Vec::new();
@@ -292,7 +292,7 @@ pub fn adjust_crossing_edges(vg: &mut VisualGraph) -> usize {
 }
 
 #[cfg_attr(not(feature = "log"), allow(unused_assignments, unused_variables))]
-pub fn do_it(vg: &mut VisualGraph) {
+pub(crate) fn do_it(vg: &mut VisualGraph) {
     let mut cnt = 0;
     cnt += handle_disconnected_nodes(vg);
     cnt += align_self_edges(vg);

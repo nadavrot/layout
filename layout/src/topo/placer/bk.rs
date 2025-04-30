@@ -15,7 +15,7 @@ enum OrderLR {
 }
 
 impl OrderLR {
-    pub fn is_left_to_right(&self) -> bool {
+    fn is_left_to_right(&self) -> bool {
         match self {
             OrderLR::LeftToRight => true,
             OrderLR::RightToLeft => false,
@@ -32,14 +32,14 @@ struct NodeAttachInfo {
 }
 
 impl NodeAttachInfo {
-    pub fn new(size: usize) -> Self {
+    fn new(size: usize) -> Self {
         let above = vec![None; size];
         let below = vec![None; size];
         Self { above, below }
     }
 
     /// Align the node \p from to \p to.
-    pub fn add(&mut self, from: NodeHandle, to: NodeHandle) {
+    fn add(&mut self, from: NodeHandle, to: NodeHandle) {
         assert!(self.below(to).is_none(), "Node is already taken");
         assert!(self.above(from).is_none(), "Node is already set");
         self.above[from.get_index()] = Some(to);
@@ -47,18 +47,18 @@ impl NodeAttachInfo {
     }
 
     /// \returns the node that this node attaches to.
-    pub fn above(&self, node: NodeHandle) -> Option<NodeHandle> {
+    fn above(&self, node: NodeHandle) -> Option<NodeHandle> {
         self.above[node.get_index()]
     }
     /// \returns the node that attaches to this node.
-    pub fn below(&self, node: NodeHandle) -> Option<NodeHandle> {
+    fn below(&self, node: NodeHandle) -> Option<NodeHandle> {
         self.below[node.get_index()]
     }
 
     /// Extract a list of vertical nodes. This method will insert all of the
     /// nodes in the graph to some vertical list of nodes based on the
     /// relationship that is expressed in this data-structure.
-    pub fn get_verticals(&mut self) -> VerticalList {
+    fn get_verticals(&mut self) -> VerticalList {
         // The list of constructed verticals.
         let mut res = VerticalList::new();
         // The list of used nodes.
@@ -75,8 +75,8 @@ impl NodeAttachInfo {
 
             // Find the bottom of the vertical:
             let mut idx = i;
-            while self.below[idx].is_some() {
-                idx = self.below[idx].unwrap().get_index();
+            while let Some(cur_node_handle) = self.below[idx] {
+                idx = cur_node_handle.get_index();
             }
 
             // Go up the vertical and save the nodes into the vector.
@@ -114,7 +114,7 @@ struct Scheduler<'a> {
 }
 
 impl<'a> Scheduler<'a> {
-    pub fn new(vg: &'a VisualGraph, vl: VerticalList, order: OrderLR) -> Self {
+    fn new(vg: &'a VisualGraph, vl: VerticalList, order: OrderLR) -> Self {
         let xs = vec![0.; vg.num_nodes()];
         let idx = vec![0; vg.dag.num_levels()];
         let v = if order.is_left_to_right() {
@@ -133,11 +133,11 @@ impl<'a> Scheduler<'a> {
         }
     }
 
-    pub fn get_x_placement(&self) -> &Vec<f64> {
-        &self.x_coordinates
+    fn get_x_placement(self) -> Vec<f64> {
+        self.x_coordinates
     }
 
-    pub fn schedule(&mut self) {
+    fn schedule(&mut self) {
         for v in &self.vl {
             self.verify_vertical(v);
         }
@@ -149,14 +149,9 @@ impl<'a> Scheduler<'a> {
                 if !self.is_vertical_ready(i) {
                     continue;
                 }
-                let v = self.vl[i].clone();
                 // Place the nodes.
-                let x = self.first_schedule_x(&v);
-                if self.order.is_left_to_right() {
-                    self.place_vertical(&v, x);
-                } else {
-                    self.place_vertical(&v, x);
-                }
+                let x = self.first_schedule_x(&self.vl[i]);
+                self.place_vertical(i, x);
                 // Wipe the vertical.
                 self.vl[i].clear();
                 to_place -= 1;
@@ -165,7 +160,7 @@ impl<'a> Scheduler<'a> {
     }
 
     // \returns the first possible schedule point.
-    pub fn first_schedule_x(&self, v: &Vertical) -> f64 {
+    fn first_schedule_x(&self, v: &Vertical) -> f64 {
         let mut last_offset_x: f64 = 0.;
         for elem in v {
             let level = self.vg.dag.level(*elem);
@@ -188,7 +183,8 @@ impl<'a> Scheduler<'a> {
     }
 
     // Place the nodes in the vertical into the schedule.
-    pub fn place_vertical(&mut self, v: &Vertical, center_x: f64) {
+    fn place_vertical(&mut self, i: usize, center_x: f64) {
+        let v = &self.vl[i];
         for elem in v {
             // Record the x coordinate for the vertical.
             self.x_coordinates[elem.get_index()] = center_x;
@@ -207,7 +203,7 @@ impl<'a> Scheduler<'a> {
     }
 
     // Make sure that the vertical is legal.
-    pub fn verify_vertical(&self, v: &Vertical) {
+    fn verify_vertical(&self, v: &Vertical) {
         let mut prev_level = 0;
         for (i, elem) in v.iter().enumerate() {
             let level = self.vg.dag.level(*elem);
@@ -265,7 +261,7 @@ type Vertical = Vec<NodeHandle>;
 type VerticalList = Vec<Vertical>;
 
 impl<'a> BK<'a> {
-    pub fn new(vg: &'a mut VisualGraph) -> Self {
+    pub(crate) fn new(vg: &'a mut VisualGraph) -> Self {
         Self { vg }
     }
 
@@ -461,7 +457,7 @@ impl<'a> BK<'a> {
         align_info
     }
 
-    pub fn do_it(&mut self) {
+    pub(crate) fn do_it(&mut self) {
         let vl = self.compute_alignment(OrderLR::RightToLeft).get_verticals();
         let mut sc0 = Scheduler::new(self.vg, vl, OrderLR::RightToLeft);
         sc0.schedule();
@@ -475,10 +471,10 @@ impl<'a> BK<'a> {
         let mut sc3 = Scheduler::new(self.vg, vl, OrderLR::LeftToRight);
         sc3.schedule();
 
-        let xs0 = sc0.get_x_placement().clone();
-        let xs1 = sc1.get_x_placement().clone();
-        let xs2 = sc2.get_x_placement().clone();
-        let xs3 = sc3.get_x_placement().clone();
+        let xs0 = sc0.get_x_placement();
+        let xs1 = sc1.get_x_placement();
+        let xs2 = sc2.get_x_placement();
+        let xs3 = sc3.get_x_placement();
 
         for i in 0..xs0.len() {
             let node = NodeHandle::from(i);

@@ -6,7 +6,7 @@ use crate::core::geometry::Point;
 use crate::topo::layout::VisualGraph;
 
 /// Move the whole graph all the way to the left.
-pub fn align_to_left(vg: &mut VisualGraph) {
+pub(crate) fn align_to_left(vg: &mut VisualGraph) {
     // Find the element with the lowest X value.
     let mut first_x: f64 = 10000.;
 
@@ -59,7 +59,7 @@ fn assign_x_coordinates(vg: &mut VisualGraph) {
     }
 }
 
-pub fn do_it(vg: &mut VisualGraph) {
+pub(crate) fn do_it(vg: &mut VisualGraph) {
     // Adjust the boxes within the line (along y).
     assign_y_coordinates(vg);
 
