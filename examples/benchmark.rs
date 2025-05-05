@@ -33,19 +33,8 @@ use layout::std_shapes::shapes::{Element, ShapeKind};
 use layout::topo::layout::VisualGraph;
 
 fn main() {
-    // let n_node = 16;
     let n_edge = 16;
     for n_node in [16, 32, 64, 128, 256, 512, 1024, 2048, 4096] {
         test_main(n_node, n_edge);
     }
-
-    // let content = svg.finalize();
-    // let filename = "./shapes.svg";
-    // let res = save_to_file(filename, &content);
-    // if let Result::Err(err) = res {
-    //     log::error!("Could not write the file {}", filename);
-    //     log::error!("Error {}", err);
-    //     return;
-    // }
-    // log::info!("Wrote {}", filename);
 }
