@@ -78,6 +78,7 @@ impl<'a> EdgeCrossOptimizer<'a> {
         self.dag.verify();
         #[cfg(feature = "log")]
         log::info!("Optimizing edge crossing.");
+        // this is only shuffle no need to update levels
         let mut best_rank = self.dag.ranks().clone();
         let mut best_cnt = self.count_crossed_edges();
         #[cfg(feature = "log")]
