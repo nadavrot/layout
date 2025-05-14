@@ -2,7 +2,7 @@ use super::ast;
 use super::lexer::Lexer;
 use super::lexer::Token;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DotParser {
     lexer: Lexer,
     tok: Token,
@@ -37,6 +37,20 @@ impl DotParser {
             _ => {
                 // Lex the next token.
                 self.tok = self.lexer.next_token();
+            }
+        }
+    }
+    pub fn lex_html(&mut self) {
+        match self.tok {
+            Token::Error(_) => {
+                panic!("can't parse after error");
+            }
+            Token::EOF => {
+                panic!("can't parse after EOF");
+            }
+            _ => {
+                // Lex the next token.
+                self.tok = self.lexer.next_token_html();
             }
         }
     }
@@ -233,12 +247,38 @@ impl DotParser {
                 return to_error("Expected '='");
             }
 
-            if let Token::Identifier(value) = self.tok.clone() {
-                lst.add_attr(&prop, &value);
+            if let Token::HtmlStart = self.tok.clone() {
+                if prop == "label" {
+                    // self.lexer.mode = super::lexer::LexerMode::Html;
+                    println!("ch before html string is {:?}", self.lexer.ch);
+                    // self.lex();
+                    println!("ch before html string is {:?}", self.lexer.ch);
+                    let html = self.parse_html_string()?;
+                    println!("html is {:?}", html);
+                    lst.add_attr_html(&prop, &html);
+                    println!("html completed");
+                    // self.lexer.mode = super::lexer::LexerMode::Normal;
+                    if let Token::HtmlEnd = self.tok.clone() {
+                        self.lex();
+                    } else {
+                        return to_error(
+                            format!("Expected '>', found {:?}", self.tok)
+                                .as_str(),
+                        );
+                    }
+                }
+            } else if let Token::Identifier(value) = self.tok.clone() {
+                lst.add_attr_str(&prop, &value);
                 // Consume the value name.
                 self.lex();
             } else {
-                return to_error("Expected value after assignment");
+                return to_error(
+                    format!(
+                        "Expected value after assignment, found {:?}",
+                        self.tok
+                    )
+                    .as_str(),
+                );
             }
 
             // Skip semicolon.
@@ -256,6 +296,16 @@ impl DotParser {
             return to_error("Expected ']'");
         }
         Result::Ok(lst)
+    }
+    // Parses a string that is inside a HTML tag.
+    pub fn parse_html_string(&mut self) -> Result<String, String> {
+        self.lex_html();
+        if let Token::Identifier(s) = self.tok.clone() {
+            self.lex();
+            Ok(s)
+        } else {
+            to_error("Expected a string")
+        }
     }
 
     fn is_edge_token(&self) -> bool {
@@ -280,7 +330,7 @@ impl DotParser {
         }
 
         if let Token::Identifier(val) = self.tok.clone() {
-            lst.add_attr(&id.name, &val);
+            lst.add_attr_str(&id.name, &val);
             self.lex();
         } else {
             return to_error("Expected identifier.");

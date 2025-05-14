@@ -15,21 +15,42 @@ impl NodeId {
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum DotString {
+    String(String),
+    HtmlString(String),
+}
+
+impl std::fmt::Display for DotString {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::String(x) => write!(f, "{}", x),
+            Self::HtmlString(_) => write!(f, "htmlstring"),
+        }
+    }
+}
+
 // [a=b; c=d; ... ]
 #[derive(Debug, Clone)]
 pub struct AttributeList {
-    pub list: Vec<(String, String)>,
+    pub list: Vec<(String, DotString)>,
 }
 
 impl AttributeList {
     pub fn new() -> Self {
         Self { list: Vec::new() }
     }
-    pub fn add_attr(&mut self, from: &str, to: &str) {
-        self.list.push((from.to_string(), to.to_string()));
+    pub fn add_attr_str(&mut self, from: &str, to: &str) {
+        self.list
+            .push((from.to_string(), DotString::String(to.to_string())));
     }
 
-    pub fn iter(&self) -> std::slice::Iter<(String, String)> {
+    pub fn add_attr_html(&mut self, from: &str, to: &str) {
+        self.list
+            .push((from.to_string(), DotString::HtmlString(to.to_string())));
+    }
+
+    pub fn iter(&self) -> std::slice::Iter<(String, DotString)> {
         self.list.iter()
     }
 }

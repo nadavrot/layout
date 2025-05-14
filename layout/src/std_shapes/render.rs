@@ -3,7 +3,13 @@
 use crate::core::base::Orientation;
 use crate::core::format::{ClipHandle, RenderBackend, Renderable, Visible};
 use crate::core::geometry::*;
-use crate::core::style::{LineStyleKind, StyleAttr};
+use crate::core::style::{
+    Align, BaselineShift, FontStyle, FontWeight, LineStyleKind, StyleAttr,
+    TextDecoration, VAlign,
+};
+use crate::gv::html::{
+    DotCellGrid, HtmlGrid, LabelOrImgGrid, TableGrid, Text, TextItem, TextTag,
+};
 use crate::std_shapes::shapes::*;
 
 /// Return the height and width of the record, depending on the geometry and
@@ -36,7 +42,7 @@ fn get_record_size(
     }
 }
 
-const BOX_SHAPE_PADDING: f64 = 10.;
+pub(crate) const BOX_SHAPE_PADDING: f64 = 10.;
 const CIRCLE_SHAPE_PADDING: f64 = 20.;
 
 /// Return the size of the shape. If \p make_xy_same is set then make the
@@ -72,7 +78,8 @@ pub fn get_shape_size(
                 Point::new(1., 1.)
             }
         }
-        _ => Point::new(1., 1.),
+        ShapeKind::Html(html_grid) => html_grid.size(font),
+        ShapeKind::None => Point::new(1., 1.),
     };
     if make_xy_same {
         res = make_size_square(res);
@@ -121,6 +128,71 @@ fn get_record_port_location(
     };
     visit_record(rec, dir, loc, size, look, &mut visitor);
     (visitor.loc, visitor.size)
+}
+struct Locator {
+    port_name: String,
+    loc: Point,
+    size: Point,
+}
+fn get_html_port_location(
+    html: &HtmlGrid,
+    loc: Point,
+    size: Point,
+    // look: &StyleAttr,
+    visitor: &mut Locator,
+) -> (Point, Point) {
+    match html {
+        HtmlGrid::Text(_text) => {}
+        HtmlGrid::FontTable(table) => {
+            get_table_port_location(table, loc, size, visitor)
+        }
+    }
+    (visitor.loc, visitor.size)
+}
+
+fn get_table_port_location(
+    table: &TableGrid,
+    loc: Point,
+    _size: Point,
+    visitor: &mut Locator,
+) {
+    if let Some(ref port_name) = table.table_attr.port {
+        if port_name == &visitor.port_name {
+            visitor.loc = loc;
+            visitor.size = Point::new(table.width(), table.height());
+        }
+    }
+    let table_width = table.width();
+    let table_height = table.height();
+    for (td_attr, c) in table.cells.iter() {
+        let cell_size = table.cell_size(c);
+        let cell_origin = table.cell_pos(c);
+        let cell_loc = Point::new(
+            visitor.loc.x + cell_origin.x + cell_size.x * 0.5
+                - table_width * 0.5,
+            visitor.loc.y + cell_origin.y + cell_size.y * 0.5
+                - table_height * 0.5,
+        );
+        if let Option::Some(ref port_name) = td_attr.port {
+            if port_name == &visitor.port_name {
+                visitor.loc = cell_loc;
+                visitor.size = cell_size;
+            }
+        }
+
+        get_cell_port_location(&c, cell_loc, cell_size, visitor);
+    }
+}
+
+fn get_cell_port_location(
+    rec: &DotCellGrid,
+    loc: Point,
+    size: Point,
+    visitor: &mut Locator,
+) {
+    if let LabelOrImgGrid::Html(html) = &rec.label_grid {
+        get_html_port_location(html, loc, size, visitor);
+    }
 }
 
 fn render_record(
@@ -185,6 +257,227 @@ fn render_record(
         Option::None,
         Option::None,
     );
+}
+
+fn render_html(
+    rec: &HtmlGrid,
+    _dir: Orientation,
+    loc: Point,
+    size: Point,
+    look: &StyleAttr,
+    canvas: &mut dyn RenderBackend,
+) {
+    match rec {
+        HtmlGrid::Text(text) => {
+            render_text(
+                text,
+                loc,
+                size,
+                look,
+                canvas,
+                Option::None,
+                Option::None,
+            );
+        }
+        HtmlGrid::FontTable(table) => {
+            render_font_table(
+                table,
+                loc,
+                look,
+                canvas,
+                Option::None,
+                Option::None,
+            );
+        }
+    }
+}
+
+fn update_location(
+    loc: Point,
+    size: Point,
+    text: &str,
+    look: &StyleAttr,
+) -> Point {
+    let mut loc = loc;
+    let text_size = get_size_for_str(text, look.font_size);
+    let displacement = size.sub(text_size);
+    match look.align {
+        Align::Left => {
+            loc.x -= displacement.x / 2.;
+        }
+        Align::Right => {
+            loc.x += displacement.x / 2.;
+        }
+        Align::Center => {}
+    }
+    match look.valign {
+        VAlign::Top => {
+            loc.y -= displacement.y / 2.;
+        }
+        VAlign::Bottom => {
+            loc.y += displacement.y / 2.;
+        }
+        VAlign::Middle => {}
+    }
+    loc
+}
+
+fn render_text(
+    rec: &Text,
+    loc: Point,
+    size: Point,
+    look: &StyleAttr,
+    canvas: &mut dyn RenderBackend,
+    clip_handle: Option<ClipHandle>,
+    _clip: Option<ClipHandle>,
+) {
+    let mut loc = loc;
+    for item in rec {
+        match item {
+            TextItem::Br(_) => {
+                loc.y += look.font_size as f64;
+            }
+            TextItem::PlainText(text) => {
+                let mut look = look.clone();
+                let loc2 = update_location(loc, size, text, &look);
+                canvas.draw_text(loc2, text.as_str(), &look);
+            }
+            TextItem::TaggedText(tagged_text) => {
+                let mut look = look.clone();
+                match &tagged_text.tag {
+                    TextTag::B => {
+                        look.font_weight = FontWeight::Bold;
+                    }
+                    TextTag::I => {
+                        look.font_style = FontStyle::Italic;
+                    }
+                    TextTag::U => {
+                        look.text_decoration = TextDecoration::Underline;
+                    }
+                    TextTag::S => {
+                        look.text_decoration = TextDecoration::None;
+                    }
+                    TextTag::Sub => {
+                        look.baseline_shift = BaselineShift::Sub;
+                    }
+                    TextTag::Font(font) => {
+                        // look.font_size = font.point_size;
+                        if let Some(point_size) = font.point_size {
+                            look.font_size = point_size as usize;
+                        }
+                        if let Some(font_color) = font.color {
+                            look.font_color = font_color;
+                        }
+                        if let Some(font_style) = font.face {
+                            look.font_style = font_style;
+                        }
+                    }
+                    TextTag::O => {
+                        look.font_weight = FontWeight::Normal;
+                    }
+                    TextTag::Sup => {
+                        look.baseline_shift = BaselineShift::Super;
+                    }
+                }
+                render_text(
+                    &tagged_text.text_items,
+                    loc,
+                    size,
+                    &look,
+                    canvas,
+                    clip_handle,
+                    Option::None,
+                );
+            }
+        }
+    }
+}
+
+fn render_font_table(
+    rec: &TableGrid,
+    loc: Point,
+    look: &StyleAttr,
+    canvas: &mut dyn RenderBackend,
+    clip_handle: Option<ClipHandle>,
+    _clip: Option<ClipHandle>,
+) {
+    let mut look = look.clone();
+    look.line_width = rec.table_attr.border as usize;
+
+    rec.table_attr.update_style_attr(&mut look);
+    let table_grid_width = rec.width();
+    let table_grid_height = rec.height();
+    let loc0 = Point::new(
+        loc.x - table_grid_width / 2.,
+        loc.y - table_grid_height / 2.,
+    );
+    canvas.draw_rect(
+        loc0,
+        Point::new(
+            table_grid_width - rec.table_attr.border as f64,
+            table_grid_height - rec.table_attr.border as f64,
+        ),
+        &look,
+        Option::None,
+        clip_handle,
+    );
+
+    for (td_attr, c) in rec.cells.iter() {
+        let cellpadding = rec.cellpadding(c);
+        let cellborder = rec.cellborder(c);
+        let mut look = look.clone();
+
+        td_attr.update_style_attr(&mut look);
+
+        let cell_size = rec.cell_size(c);
+        let cell_origin = rec.cell_pos(c);
+        let cell_loc = Point::new(
+            loc0.x + cell_origin.x + cell_size.x * 0.5,
+            loc0.y + cell_origin.y + cell_size.y * 0.5,
+        );
+        let mut look_border = look.clone();
+        look_border.line_width = cellborder as usize;
+
+        canvas.draw_rect(
+            Point::new(
+                loc0.x + cell_origin.x + look_border.line_width as f64 * 0.5,
+                loc0.y + cell_origin.y + look_border.line_width as f64 * 0.5,
+            ),
+            cell_size.sub(Point::splat(cellborder)),
+            &look_border,
+            Option::None,
+            clip_handle,
+        );
+        render_cell(
+            &c,
+            cell_loc,
+            cell_size.sub(Point::splat(cellpadding * 2.0 + cellborder * 2.0)),
+            &look,
+            canvas,
+        );
+    }
+}
+
+fn render_cell(
+    rec: &DotCellGrid,
+    loc: Point,
+    size: Point,
+    look: &StyleAttr,
+    canvas: &mut dyn RenderBackend,
+) {
+    match &rec.label_grid {
+        LabelOrImgGrid::Html(html) => {
+            render_html(
+                html,
+                Orientation::LeftToRight,
+                loc,
+                size,
+                look,
+                canvas,
+            );
+        }
+        LabelOrImgGrid::Img(_, _) => {}
+    }
 }
 
 pub trait RecordVisitor {
@@ -299,6 +592,14 @@ impl Renderable for Element {
                     canvas,
                 );
             }
+            ShapeKind::Html(rec) => render_html(
+                rec,
+                self.orientation,
+                self.pos.center(),
+                self.pos.size(false),
+                &self.look,
+                canvas,
+            ),
             ShapeKind::Box(text) => {
                 canvas.draw_rect(
                     self.pos.bbox(false).0,
@@ -412,6 +713,22 @@ impl Renderable for Element {
                 let loc = self.pos.center();
                 let size = self.pos.size(false);
                 get_connection_point_for_circle(loc, size, from, force)
+            }
+            ShapeKind::Html(html) => {
+                let mut loc = self.pos.center();
+                let mut size = self.pos.size(false);
+                if let Some(port_name) = port {
+                    let mut visitor = Locator {
+                        port_name: port_name.to_string(),
+                        loc,
+                        size,
+                    };
+                    let r =
+                        get_html_port_location(html, loc, size, &mut visitor);
+                    loc = r.0;
+                    size = r.1;
+                }
+                get_connection_point_for_box(loc, size, from, force)
             }
             _ => {
                 unreachable!();

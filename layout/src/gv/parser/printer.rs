@@ -1,6 +1,6 @@
 //! A collection of methods for printing the AST.
 
-use super::ast;
+use super::ast::{self, DotString};
 
 fn print_node_id(n: &ast::NodeId, indent: usize) {
     print!("{}", " ".repeat(indent));
@@ -21,7 +21,7 @@ fn print_arrow(k: &ast::ArrowKind, indent: usize) {
         }
     }
 }
-fn print_attribute(a: &str, b: &str, indent: usize, i: usize) {
+fn print_attribute(a: &str, b: &DotString, indent: usize, i: usize) {
     print!("{}", " ".repeat(indent));
     println!("{})\"{}\" = \"{}\"", i, a, b);
 }

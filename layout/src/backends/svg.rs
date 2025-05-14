@@ -213,6 +213,8 @@ impl RenderBackend for SVGWriter {
         let len = text.len();
 
         let font_class = self.get_or_create_font_style(look.font_size);
+        let font_color = look.font_color;
+        let font_size = look.font_size;
 
         let mut content = String::new();
         let cnt = 1 + text.lines().count();
@@ -226,10 +228,11 @@ impl RenderBackend for SVGWriter {
         self.grow_window(xy, Point::new(10., len as f64 * 10.));
         let line = format!(
             "<text dominant-baseline=\"middle\" text-anchor=\"middle\" 
-            x=\"{}\" y=\"{}\" class=\"{}\">{}</text>",
+            x=\"{}\" y=\"{}\" class=\"{}\" fill=\"{}\">{}</text>",
             xy.x,
             xy.y - size_y / 2.,
             font_class,
+            font_color.to_web_color(),
             &content
         );
 

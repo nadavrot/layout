@@ -7,6 +7,7 @@ use crate::core::base::Orientation;
 use crate::core::format::Visible;
 use crate::core::geometry::{Point, Position};
 use crate::core::style::{LineStyleKind, StyleAttr};
+use crate::gv::html::HtmlGrid;
 use crate::std_shapes::render::get_shape_size;
 
 const PADDING: f64 = 60.;
@@ -43,6 +44,7 @@ pub enum ShapeKind {
     DoubleCircle(String),
     Record(RecordDef),
     Connector(Option<String>),
+    Html(HtmlGrid),
 }
 
 impl ShapeKind {
