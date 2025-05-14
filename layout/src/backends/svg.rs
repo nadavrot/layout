@@ -3,8 +3,11 @@
 use crate::core::color::Color;
 use crate::core::format::{ClipHandle, RenderBackend};
 use crate::core::geometry::Point;
-use crate::core::style::StyleAttr;
+use crate::core::style::{
+    StyleAttr, TextDecoration,
+};
 use std::collections::HashMap;
+use std::str::FromStr;
 
 static SVG_HEADER: &str =
     r#"<?xml version="1.0" encoding="UTF-8" standalone="no"?>"#;
@@ -82,6 +85,29 @@ impl Default for SVGWriter {
 // This trivial implementation of `drop` adds a print to a file.
 impl Drop for SVGWriter {
     fn drop(&mut self) {}
+}
+
+#[inline]
+fn svg_text_decoration_str(
+    text_decoration: &TextDecoration,
+) -> String {
+    if !text_decoration.underline && !text_decoration.overline
+        && !text_decoration.line_through
+    {
+        return String::new();
+    }
+    let mut result = "text-decoration=\"".to_string();
+    if text_decoration.underline {
+        result.push_str("underline ");
+    }
+    if text_decoration.overline {
+        result.push_str("overline ");
+    }
+    if text_decoration.line_through {
+        result.push_str("line-through ");
+    }
+    result.push_str("\"");
+    result
 }
 
 impl SVGWriter {
@@ -226,13 +252,20 @@ impl RenderBackend for SVGWriter {
         }
 
         self.grow_window(xy, Point::new(10., len as f64 * 10.));
+        let font_style_text = match look.font_style {
+            crate::core::style::FontStyle::Italic => "font-style=\"italic\"",
+            crate::core::style::FontStyle::Normal => "",
+        };
+        let text_decoration_str = svg_text_decoration_str(&look.text_decoration);
         let line = format!(
             "<text dominant-baseline=\"middle\" text-anchor=\"middle\" 
-            x=\"{}\" y=\"{}\" font-size=\"{}\" font-family=\"{}\" fill=\"{}\">{}</text>",
+            x=\"{}\" y=\"{}\" font-size=\"{}\" font-family=\"{}\" {} {} fill=\"{}\">{}</text>",
             xy.x,
             xy.y - size_y / 2.,
             font_size,
             font_family,
+            font_style_text,
+            text_decoration_str,
             font_color.to_web_color(),
             &content
         );

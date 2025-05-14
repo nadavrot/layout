@@ -57,7 +57,6 @@ pub enum LineStyleKind {
 pub(crate) enum FontStyle {
     Normal,
     Italic,
-    Oblique,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -70,9 +69,20 @@ pub(crate) enum FontWeight {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub(crate) enum TextDecoration {
-    None,
-    Underline,
+pub(crate) struct TextDecoration {
+    pub(crate) underline: bool,
+    pub(crate) overline: bool,
+    pub(crate) line_through: bool,
+}
+
+impl TextDecoration {
+    pub fn new() -> Self {
+        Self {
+            underline: false,
+            overline: false,
+            line_through: false,
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -120,7 +130,7 @@ impl StyleAttr {
             fontname,
             font_style: FontStyle::Normal,
             font_weight: FontWeight::Normal,
-            text_decoration: TextDecoration::None,
+            text_decoration: TextDecoration::new(),
             baseline_shift: BaselineShift::Normal,
             align: Align::Center,
             valign: VAlign::Middle,

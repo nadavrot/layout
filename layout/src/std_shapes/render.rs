@@ -352,10 +352,10 @@ fn render_text(
                         look.font_style = FontStyle::Italic;
                     }
                     TextTag::U => {
-                        look.text_decoration = TextDecoration::Underline;
+                        look.text_decoration.underline = true;
                     }
                     TextTag::S => {
-                        look.text_decoration = TextDecoration::None;
+                        look.text_decoration.line_through = true;
                     }
                     TextTag::Sub => {
                         look.baseline_shift = BaselineShift::Sub;
@@ -373,7 +373,7 @@ fn render_text(
                         }
                     }
                     TextTag::O => {
-                        look.font_weight = FontWeight::Normal;
+                        look.text_decoration.overline = true;
                     }
                     TextTag::Sup => {
                         look.baseline_shift = BaselineShift::Super;
