@@ -1261,7 +1261,6 @@ impl TableGridInner {
         }
 
         // ending part
-        table_grid.pretty_print();
         table_grid
     }
 

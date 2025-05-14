@@ -89,6 +89,7 @@ pub struct StyleAttr {
     pub fill_color: Option<Color>,
     pub rounded: usize,
     pub font_size: usize,
+    pub(crate) fontname: String,
     pub(crate) font_color: Color,
     pub(crate) font_style: FontStyle,
     pub(crate) font_weight: FontWeight,
@@ -108,6 +109,7 @@ impl StyleAttr {
         font_size: usize,
     ) -> Self {
         let font_color = Color::fast("black");
+        let fontname = String::from("Times,serif");
         Self {
             line_color,
             line_width,
@@ -115,6 +117,7 @@ impl StyleAttr {
             font_color,
             rounded,
             font_size,
+            fontname,
             font_style: FontStyle::Normal,
             font_weight: FontWeight::Normal,
             text_decoration: TextDecoration::None,
