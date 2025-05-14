@@ -368,9 +368,6 @@ fn render_text(
                         if let Some(font_color) = font.color {
                             look.font_color = font_color;
                         }
-                        if let Some(font_style) = font.face {
-                            look.font_style = font_style;
-                        }
                     }
                     TextTag::O => {
                         look.font_weight = FontWeight::Normal;

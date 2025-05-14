@@ -87,7 +87,7 @@ pub enum Scale {
 #[derive(Debug, Clone)]
 pub struct Font {
     pub(crate) color: Option<Color>,
-    pub(crate) face: Option<FontStyle>,
+    pub(crate) face: Option<String>,
     pub(crate) point_size: Option<f64>,
 }
 

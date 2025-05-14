@@ -249,14 +249,8 @@ impl DotParser {
 
             if let Token::HtmlStart = self.tok.clone() {
                 if prop == "label" {
-                    // self.lexer.mode = super::lexer::LexerMode::Html;
-                    println!("ch before html string is {:?}", self.lexer.ch);
-                    // self.lex();
-                    println!("ch before html string is {:?}", self.lexer.ch);
                     let html = self.parse_html_string()?;
-                    println!("html is {:?}", html);
                     lst.add_attr_html(&prop, &html);
-                    println!("html completed");
                     // self.lexer.mode = super::lexer::LexerMode::Normal;
                     if let Token::HtmlEnd = self.tok.clone() {
                         self.lex();
