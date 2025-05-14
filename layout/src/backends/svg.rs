@@ -3,9 +3,7 @@
 use crate::core::color::Color;
 use crate::core::format::{ClipHandle, RenderBackend};
 use crate::core::geometry::Point;
-use crate::core::style::{
-    StyleAttr, TextDecoration,
-};
+use crate::core::style::{StyleAttr, TextDecoration};
 use std::collections::HashMap;
 use std::str::FromStr;
 
@@ -88,10 +86,9 @@ impl Drop for SVGWriter {
 }
 
 #[inline]
-fn svg_text_decoration_str(
-    text_decoration: &TextDecoration,
-) -> String {
-    if !text_decoration.underline && !text_decoration.overline
+fn svg_text_decoration_str(text_decoration: &TextDecoration) -> String {
+    if !text_decoration.underline
+        && !text_decoration.overline
         && !text_decoration.line_through
     {
         return String::new();
@@ -256,7 +253,8 @@ impl RenderBackend for SVGWriter {
             crate::core::style::FontStyle::Italic => "font-style=\"italic\"",
             crate::core::style::FontStyle::Normal => "",
         };
-        let text_decoration_str = svg_text_decoration_str(&look.text_decoration);
+        let text_decoration_str =
+            svg_text_decoration_str(&look.text_decoration);
         let line = format!(
             "<text dominant-baseline=\"middle\" text-anchor=\"middle\" 
             x=\"{}\" y=\"{}\" font-size=\"{}\" font-family=\"{}\" {} {} fill=\"{}\">{}</text>",
