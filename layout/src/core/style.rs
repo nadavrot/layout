@@ -63,9 +63,6 @@ pub(crate) enum FontStyle {
 pub(crate) enum FontWeight {
     Normal,
     Bold,
-    Bolder,
-    Lighter,
-    Number(usize),
 }
 
 #[derive(Debug, Copy, Clone)]

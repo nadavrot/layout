@@ -11,7 +11,7 @@ digraph structs {
           <TABLE CELLPADDING="0" BORDER="0" CELLSPACING="0">
 						<TR>
 							<TD><FONT COLOR="green" FACE="Cursive">Mixed</FONT></TD>
-							<TD><FONT COLOR="red">fonts</FONT></TD>
+							<TD><FONT COLOR="red"><B>fonts</B></FONT></TD>
 						</TR>
           </TABLE>
         </TD>
