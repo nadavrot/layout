@@ -411,6 +411,7 @@ fn render_font_table(
     );
 
     for (td_attr, c) in rec.cells.iter() {
+        let cellpadding = rec.cellpadding(c);
         let cellborder = rec.cellborder(c);
         let mut look = look.clone();
 
@@ -435,7 +436,11 @@ fn render_font_table(
             Option::None,
             clip_handle,
         );
-        render_cell(&c, cell_loc, c.size(look.font_size), &look, canvas);
+        let size = Point::new(
+            cell_size.x - cellborder*2. - cellpadding * 2.,
+            cell_size.y - cellborder*2. - cellpadding * 2.,
+        );
+        render_cell(&c, cell_loc, size, &look, canvas);
     }
 }
 
