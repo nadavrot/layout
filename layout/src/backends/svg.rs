@@ -239,12 +239,8 @@ impl RenderBackend for SVGWriter {
         let font_family = look.fontname.clone();
 
         let mut content = String::new();
-        let cnt = 1 + text.lines().count();
-        let size_y = (cnt * look.font_size) as f64;
         for line in text.lines() {
-            // content.push_str(&format!("<tspan x = \"{}\" dy=\"1.0em\">", xy.x));
             content.push_str(&escape_string(line));
-            // content.push_str("</tspan>");
         }
 
         self.grow_window(xy, Point::new(10., len as f64 * 10.));

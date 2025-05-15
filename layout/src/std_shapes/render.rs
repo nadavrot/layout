@@ -5,7 +5,7 @@ use crate::core::format::{ClipHandle, RenderBackend, Renderable, Visible};
 use crate::core::geometry::*;
 use crate::core::style::{
     Align, BaselineShift, FontStyle, FontWeight, LineStyleKind, StyleAttr,
-    TextDecoration, VAlign,
+    VAlign,
 };
 use crate::gv::html::{
     DotCellGrid, HtmlGrid, LabelOrImgGrid, TableGrid, Text, TextItem, TextTag,
