@@ -1010,7 +1010,14 @@ impl HtmlParser {
 
         self.parse_tag_end(&TagType::Table, true)?;
         if let Some(ref tag) = table_tag1 {
-            self.parse_tag_end(&tag.0, true)?;
+            self.parse_tag_end(&tag.0, false)?;
+
+            if let Token::Identifier(x) = self.tok.clone() {
+                return to_error(
+                    format!("No space after font tag wrapping table: {:?}", x)
+                        .as_str(),
+                );
+            }
         }
         let table_attr = TableAttr::from_attr_list(table_attr2);
 
@@ -1160,7 +1167,6 @@ impl HtmlParser {
         pass_identifier: bool,
     ) -> Result<(), String> {
         if let Token::ClosingTag(x) = self.tok.clone() {
-            // self.lexer.mode = super::lexer::HtmlMode::HtmlText;
             if x == *tag {
                 self.lex();
             } else {
