@@ -457,7 +457,6 @@ fn render_font_table(
     );
 
     for (td_attr, c) in rec.cells.iter() {
-
         let cellborder = rec.cellborder(c);
         let mut look = look.clone();
 

@@ -662,7 +662,6 @@ impl HtmlGrid {
 #[derive(Debug, Clone, PartialEq)]
 pub enum HtmlMode {
     Html,
-    // HtmlText,
     HtmlTag,
 }
 
