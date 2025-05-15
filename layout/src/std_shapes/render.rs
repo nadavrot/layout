@@ -332,15 +332,19 @@ fn render_text(
     _clip: Option<ClipHandle>,
 ) {
     let mut loc = loc;
+    loc.x -= size.x / 2.;
     for item in rec {
         match item {
             TextItem::Br(_) => {
                 loc.y += look.font_size as f64;
             }
             TextItem::PlainText(text) => {
-                let mut look = look.clone();
+                let size_str = get_size_for_str(text, look.font_size);
+                let look = look.clone();
+                loc.x += size_str.x / 2.;
                 let loc2 = update_location(loc, size, text, &look);
                 canvas.draw_text(loc2, text.as_str(), &look);
+                loc.x += size_str.x / 2.;
             }
             TextItem::TaggedText(tagged_text) => {
                 let mut look = look.clone();
@@ -379,9 +383,11 @@ fn render_text(
                         look.baseline_shift = BaselineShift::Super;
                     }
                 }
+                let mut loc3 = loc;
+                loc3.x += size.x / 2.;
                 render_text(
                     &tagged_text.text_items,
-                    loc,
+                    loc3,
                     size,
                     &look,
                     canvas,
@@ -423,7 +429,7 @@ fn render_font_table(
     );
 
     for (td_attr, c) in rec.cells.iter() {
-        let cellpadding = rec.cellpadding(c);
+        // let cellpadding = rec.cellpadding(c);
         let cellborder = rec.cellborder(c);
         let mut look = look.clone();
 
@@ -448,13 +454,7 @@ fn render_font_table(
             Option::None,
             clip_handle,
         );
-        render_cell(
-            &c,
-            cell_loc,
-            cell_size.sub(Point::splat(cellpadding * 2.0 + cellborder * 2.0)),
-            &look,
-            canvas,
-        );
+        render_cell(&c, cell_loc, c.size(look.font_size), &look, canvas);
     }
 }
 

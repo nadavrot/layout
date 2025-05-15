@@ -242,9 +242,9 @@ impl RenderBackend for SVGWriter {
         let cnt = 1 + text.lines().count();
         let size_y = (cnt * look.font_size) as f64;
         for line in text.lines() {
-            content.push_str(&format!("<tspan x = \"{}\" dy=\"1.0em\">", xy.x));
+            // content.push_str(&format!("<tspan x = \"{}\" dy=\"1.0em\">", xy.x));
             content.push_str(&escape_string(line));
-            content.push_str("</tspan>");
+            // content.push_str("</tspan>");
         }
 
         self.grow_window(xy, Point::new(10., len as f64 * 10.));
@@ -262,7 +262,7 @@ impl RenderBackend for SVGWriter {
             "<text dominant-baseline=\"middle\" text-anchor=\"middle\" 
             x=\"{}\" y=\"{}\" font-size=\"{}\" font-family=\"{}\" {} {} {} fill=\"{}\">{}</text>",
             xy.x,
-            xy.y - size_y / 2.,
+            xy.y,
             font_size,
             font_family,
             font_style_text,

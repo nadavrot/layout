@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 use crate::std_shapes::render::BOX_SHAPE_PADDING;
 
-use crate::core::style::{Align, BAlign, FontStyle, StyleAttr, VAlign};
+use crate::core::style::{Align, BAlign, StyleAttr, VAlign};
 
 use crate::core::color::Color;
 
@@ -210,8 +210,8 @@ pub struct DotCell {
 pub struct DotCellGrid {
     pub(crate) i: usize,
     pub(crate) j: usize,
-    pub(crate) width: usize,
-    pub(crate) height: usize,
+    pub(crate) width_in_cell: usize,
+    pub(crate) height_in_cell: usize,
     pub label_grid: LabelOrImgGrid,
     pub td_attr: TdAttr,
 }
@@ -220,8 +220,8 @@ impl DotCellGrid {
     pub fn from_dot_cell(
         i: usize,
         j: usize,
-        width: usize,
-        height: usize,
+        width_in_cell: usize,
+        height_in_cell: usize,
         dot_cell: &DotCell,
     ) -> Self {
         let label_grid = match &dot_cell.label {
@@ -235,10 +235,17 @@ impl DotCellGrid {
         Self {
             i,
             j,
-            width,
-            height,
+            width_in_cell,
+            height_in_cell,
             label_grid,
             td_attr: dot_cell.td_attr.clone(),
+        }
+    }
+
+    pub fn size(&self, font_size: usize) -> Point {
+        match &self.label_grid {
+            LabelOrImgGrid::Html(html) => html.size(font_size),
+            LabelOrImgGrid::Img(_, _) => Point::new(0.0, 0.0),
         }
     }
 }
@@ -1357,18 +1364,22 @@ impl TableGrid {
     }
     pub fn cell_size(&self, dot_cell_grid: &DotCellGrid) -> Point {
         let mut height = 0f64;
-        for i in dot_cell_grid.j..(dot_cell_grid.j + dot_cell_grid.height) {
+        for i in
+            dot_cell_grid.j..(dot_cell_grid.j + dot_cell_grid.height_in_cell)
+        {
             height += self.height_arr[i];
         }
         height += self.table_attr.cellspacing as f64
-            * (dot_cell_grid.height as f64 - 1.);
+            * (dot_cell_grid.height_in_cell as f64 - 1.);
 
         let mut width = 0f64;
-        for i in dot_cell_grid.i..(dot_cell_grid.i + dot_cell_grid.width) {
+        for i in
+            dot_cell_grid.i..(dot_cell_grid.i + dot_cell_grid.width_in_cell)
+        {
             width += self.width_arr[i];
         }
         width += self.table_attr.cellspacing as f64
-            * (dot_cell_grid.width as f64 - 1.);
+            * (dot_cell_grid.width_in_cell as f64 - 1.);
 
         Point::new(width, height)
     }
@@ -1381,8 +1392,8 @@ impl TableGrid {
         for (idx, (_td_attr, dot_cell)) in
             table_grid_inner.cells.iter().enumerate()
         {
-            for i in 0..dot_cell.width {
-                for j in 0..dot_cell.height {
+            for i in 0..dot_cell.width_in_cell {
+                for j in 0..dot_cell.height_in_cell {
                     let x_cur = dot_cell.i + i;
                     let y_cur = dot_cell.j + j;
                     grid[(y_cur * width_in_cell) + x_cur] = Some(idx);
@@ -1485,7 +1496,7 @@ impl TableGrid {
 
                     let w = w + cellborder * 2.0 + cellpadding * 2.0;
 
-                    max_width = max_width.max(w / cell.width as f64);
+                    max_width = max_width.max(w / cell.width_in_cell as f64);
                 }
             }
 
@@ -1517,7 +1528,7 @@ impl TableGrid {
 
                     let h = h + cellborder * 2.0 + cellpadding * 2.0;
 
-                    max_height = max_height.max(h / cell.height as f64);
+                    max_height = max_height.max(h / cell.height_in_cell as f64);
                 }
             }
             self.height_arr[y] = max_height;
@@ -1543,6 +1554,15 @@ pub(crate) fn get_text_item_size(item: &TextItem, font_size: usize) -> Point {
 
 fn get_tagged_text_size(tagged_text: &TaggedText, font_size: usize) -> Point {
     let mut size = Point::zero();
+    let mut font_size = font_size;
+    match &tagged_text.tag {
+        TextTag::Font(font_tag) => {
+            if let Some(size_str) = font_tag.point_size {
+                font_size = size_str as usize;
+            }
+        }
+        _ => {}
+    }
     for text_item in &tagged_text.text_items {
         let item_size = get_text_item_size(text_item, font_size);
         size = size.add(item_size);
