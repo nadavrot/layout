@@ -8,7 +8,8 @@ use crate::core::style::{
     VAlign,
 };
 use crate::gv::html::{
-    DotCellGrid, HtmlGrid, LabelOrImgGrid, TableGrid, Text, TextItem, TextTag,
+    DotCellGrid, HtmlGrid, LabelOrImgGrid, TableGrid, TableTag, Text, TextItem,
+    TextTag,
 };
 use crate::std_shapes::shapes::*;
 
@@ -331,12 +332,14 @@ fn render_text(
     clip_handle: Option<ClipHandle>,
     _clip: Option<ClipHandle>,
 ) {
+    let loc0_x = loc.x;
     let mut loc = loc;
     loc.x -= size.x / 2.;
     for item in rec {
         match item {
             TextItem::Br(_) => {
                 loc.y += look.font_size as f64;
+                loc.x = loc0_x - size.x / 2.;
             }
             TextItem::PlainText(text) => {
                 let size_str = get_size_for_str(text, look.font_size);
@@ -409,6 +412,33 @@ fn render_font_table(
 ) {
     let mut look = look.clone();
     look.line_width = rec.table_attr.border as usize;
+
+    match &rec.table_tag {
+        TableTag::B => {
+            look.font_weight = FontWeight::Bold;
+        }
+        TableTag::I => {
+            look.font_style = FontStyle::Italic;
+        }
+        TableTag::U => {
+            look.text_decoration.underline = true;
+        }
+        TableTag::O => {
+            look.text_decoration.overline = true;
+        }
+        TableTag::Font(font) => {
+            if let Some(point_size) = font.point_size {
+                look.font_size = point_size as usize;
+            }
+            if let Some(font_color) = font.color {
+                look.font_color = font_color;
+            }
+            if let Some(ref font_name) = font.face {
+                look.fontname = font_name.clone();
+            }
+        }
+        TableTag::None => {}
+    }
 
     rec.table_attr.update_style_attr(&mut look);
     let table_grid_width = rec.width();

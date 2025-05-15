@@ -969,7 +969,11 @@ impl HtmlParser {
                 }
                 if string_before {
                     return to_error(
-                        "Cannot inlcuding string before table tag",
+                        format!(
+                            "cannot have string before table tag: {:?}",
+                            tag1
+                        )
+                        .as_str(),
                     );
                 }
                 (Some((tag1, table_attr1)), tag_attr)
@@ -1324,6 +1328,7 @@ pub struct TableGrid {
     height_in_cell: usize,          // height of the table in cells
     font_size: usize,
     pub(crate) table_attr: TableAttr,
+    pub(crate) table_tag: TableTag,
 }
 
 impl TableGrid {
@@ -1410,6 +1415,7 @@ impl TableGrid {
             height_in_cell,
             font_size: 0,
             table_attr: font_table.table_attr.clone(),
+            table_tag: font_table.tag.clone(),
         }
     }
 
