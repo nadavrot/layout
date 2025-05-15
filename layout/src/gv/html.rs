@@ -692,8 +692,8 @@ impl HtmlParser {
     }
     pub fn lex(&mut self) {
         match self.tok {
-            Token::Error(_) => {
-                panic!("can't parse after error");
+            Token::Error(pos) => {
+                panic!("can't parse after error at {}", pos);
             }
             Token::EOF => {
                 panic!("can't parse after EOF");

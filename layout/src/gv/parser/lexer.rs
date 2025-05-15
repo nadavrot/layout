@@ -30,8 +30,6 @@ pub struct Lexer {
     input: Vec<char>,
     pub pos: usize,
     pub ch: char,
-    // pub mode: LexerMode,
-    // pub html_depth: usize,
 }
 
 impl Lexer {
@@ -45,8 +43,6 @@ impl Lexer {
             input,
             pos: 0,
             ch: '\0',
-            // mode: LexerMode::Normal,
-            // html_depth: 0,
         };
         l.read_char();
         l
