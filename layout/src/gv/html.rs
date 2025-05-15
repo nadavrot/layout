@@ -1,7 +1,10 @@
 use crate::core::geometry::{get_size_for_str, Point};
 use std::collections::HashMap;
 
-use crate::core::style::{Align, BAlign, StyleAttr, VAlign};
+use crate::core::style::{
+    Align, BAlign, BaselineShift, FontWeight, StyleAttr, VAlign,
+    FontStyle, TextDecoration
+};
 
 use crate::core::color::Color;
 
@@ -613,8 +616,118 @@ impl Html {
 }
 
 #[derive(Debug, Clone)]
+pub struct TextStyle {
+    pub(crate) font: Font,
+    pub(crate) font_style: FontStyle,
+    pub(crate) font_weight: FontWeight,
+    pub(crate) text_decoration: TextDecoration,
+    pub(crate) baseline_shift: BaselineShift,
+}
+
+#[derive(Debug, Clone)]
+pub struct PlainTextGrid {
+    pub(crate) text: String,
+    pub(crate) text_style: TextStyle,
+}
+#[derive(Debug, Clone)]
+pub struct TextGrid {
+    // each line is a vector of PlainTextGrid
+    // as a whole it represent multiline text
+    pub(crate) text_items: Vec<Vec<PlainTextGrid>>,
+    pub(crate) br: Vec<Align>,
+}
+
+impl TextGrid {
+    pub fn new() -> Self {
+        Self {
+            text_items: vec![],
+            br: vec![],
+        }
+    }
+    pub fn collect_from_text(&mut self, text: &Text, text_style: &TextStyle) {
+        for item in text.iter() {
+            match item {
+                TextItem::TaggedText(tagged_text) => {
+                    let mut text_style = text_style.clone();
+                    match &tagged_text.tag {
+                        TextTag::Font(font) => {
+                            text_style.font = font.clone();
+                        }
+                        TextTag::I => text_style.font_style = FontStyle::Italic,
+                        TextTag::B => text_style.font_weight = FontWeight::Bold,
+                        TextTag::U => {
+                            text_style.text_decoration.underline = true
+                        }
+                        TextTag::O => {
+                            text_style.text_decoration.overline = true
+                        }
+                        TextTag::Sub => {
+                            text_style.baseline_shift = BaselineShift::Sub
+                        }
+                        TextTag::Sup => {
+                            text_style.baseline_shift = BaselineShift::Super
+                        }
+                        TextTag::S => {
+                            text_style.text_decoration.line_through = true
+                        }
+                    }
+                    self.collect_from_text(
+                        &tagged_text.text_items,
+                        &text_style,
+                    );
+                }
+                TextItem::Br(align) => {
+                    self.text_items.push(vec![]);
+                    self.br.push(align.clone());
+                }
+                TextItem::PlainText(text) => {
+                    let plain_text = PlainTextGrid {
+                        text: text.clone(),
+                        text_style: text_style.clone(),
+                    };
+                    if let Some(last_line) = self.text_items.last_mut() {
+                        last_line.push(plain_text);
+                    } else {
+                        let mut line = vec![];
+                        line.push(plain_text);
+                        self.text_items.push(line);
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn width(&self, font_size: usize) -> f64 {
+        let mut width = 0.0;
+        for line in self.text_items.iter() {
+            let mut line_width = 0.0;
+            for item in line.iter() {
+                let text_size = get_size_for_str(&item.text, font_size);
+                line_width += text_size.x;
+            }
+            if width < line_width {
+                width = line_width;
+            }
+        }
+        width
+    }
+    pub fn height(&self, font_size: usize) -> f64 {
+        let mut height = 0.0;
+        for line in self.text_items.iter() {
+            // TODO: we are going with the last with the assumption that heigh is the same for every plaintext,
+            // which is correct for the current get_size_for_str implementation
+            if let Some(last_line) = line.last() {
+                let text_size = get_size_for_str(&last_line.text, font_size);
+                height += text_size.y;
+            }
+        }
+        height
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum HtmlGrid {
-    Text(Text),
+    Text(TextGrid),
     FontTable(TableGrid),
 }
 
@@ -622,34 +735,26 @@ impl HtmlGrid {
     pub fn size(&self, font_size: usize) -> Point {
         match self {
             HtmlGrid::Text(text) => {
-                let mut size = Point::new(0.0, 0.0);
-                for item in text.iter() {
-                    match item {
-                        TextItem::TaggedText(tagged_text) => {
-                            let text_size =
-                                get_tagged_text_size(tagged_text, font_size);
-                            size.x += text_size.x;
-                            size.y = size.y.max(text_size.y);
-                        }
-                        TextItem::Br(_) => {
-                            size.x = 0.0;
-                            size.y += font_size as f64;
-                        }
-                        TextItem::PlainText(text) => {
-                            let text_size = get_size_for_str(text, font_size);
-                            size.x += text_size.x;
-                            size.y = size.y.max(text_size.y);
-                        }
-                    }
-                }
-                size
+                Point::new(text.width(font_size), text.height(font_size))
             }
             HtmlGrid::FontTable(table_grid) => table_grid.size(font_size),
         }
     }
     pub fn from_html(html: &Html) -> Self {
         match html {
-            Html::Text(text) => HtmlGrid::Text(text.clone()),
+            // Html::Text(text) => HtmlGrid::Text(text.clone()),
+            Html::Text(text) => {
+                let mut text_grid = TextGrid::new();
+                let text_style = TextStyle {
+                    font: Font::new(),
+                    font_style: FontStyle::Normal,
+                    font_weight: FontWeight::Normal,
+                    text_decoration: TextDecoration::new(),
+                    baseline_shift: BaselineShift::Normal,
+                };
+                text_grid.collect_from_text(text, &text_style);
+                HtmlGrid::Text(text_grid)
+            }
             Html::FontTable(table) => {
                 HtmlGrid::FontTable(TableGrid::from_table(table))
             }
@@ -1497,16 +1602,7 @@ impl TableGrid {
                 if let Some(cell) = self.get_cell(x, y) {
                     let w = match &cell.label_grid {
                         LabelOrImgGrid::Html(html) => match html {
-                            HtmlGrid::Text(text) => {
-                                let mut size = Point::zero();
-                                for text_item in text {
-                                    let item_size = get_text_item_size(
-                                        text_item, font_size,
-                                    );
-                                    size = size.add(item_size);
-                                }
-                                size.x
-                            }
+                            HtmlGrid::Text(text) => text.width(font_size),
                             HtmlGrid::FontTable(x) => x.width(),
                         },
                         _ => 0.0,
@@ -1529,16 +1625,7 @@ impl TableGrid {
                 if let Some(cell) = self.get_cell(x, y) {
                     let h = match &cell.label_grid {
                         LabelOrImgGrid::Html(html) => match html {
-                            HtmlGrid::Text(text) => {
-                                let mut size = Point::zero();
-                                for text_item in text {
-                                    let item_size = get_text_item_size(
-                                        text_item, font_size,
-                                    );
-                                    size = size.add(item_size);
-                                }
-                                size.y as f64
-                            }
+                            HtmlGrid::Text(text) => text.height(font_size),
                             HtmlGrid::FontTable(x) => x.height(),
                         },
                         _ => 0.0,
@@ -1557,32 +1644,4 @@ impl TableGrid {
         // update the font size
         self.font_size = font_size;
     }
-}
-
-pub(crate) fn get_text_item_size(item: &TextItem, font_size: usize) -> Point {
-    match item {
-        TextItem::Br(_) => Point::new(1.0, 1.0),
-        TextItem::PlainText(text) => get_size_for_str(text, font_size),
-        TextItem::TaggedText(tagged_text) => {
-            get_tagged_text_size(tagged_text, font_size)
-        }
-    }
-}
-
-fn get_tagged_text_size(tagged_text: &TaggedText, font_size: usize) -> Point {
-    let mut size = Point::zero();
-    let mut font_size = font_size;
-    match &tagged_text.tag {
-        TextTag::Font(font_tag) => {
-            if let Some(size_str) = font_tag.point_size {
-                font_size = size_str as usize;
-            }
-        }
-        _ => {}
-    }
-    for text_item in &tagged_text.text_items {
-        let item_size = get_text_item_size(text_item, font_size);
-        size = size.add(item_size);
-    }
-    size
 }

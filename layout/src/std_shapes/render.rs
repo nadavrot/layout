@@ -4,12 +4,10 @@ use crate::core::base::Orientation;
 use crate::core::format::{ClipHandle, RenderBackend, Renderable, Visible};
 use crate::core::geometry::*;
 use crate::core::style::{
-    Align, BaselineShift, FontStyle, FontWeight, LineStyleKind, StyleAttr,
-    VAlign,
+    Align, FontStyle, FontWeight, LineStyleKind, StyleAttr, VAlign,
 };
 use crate::gv::html::{
-    DotCellGrid, HtmlGrid, LabelOrImgGrid, TableGrid, TableTag, Text, TextItem,
-    TextTag,
+    DotCellGrid, HtmlGrid, LabelOrImgGrid, TableGrid, TableTag, TextGrid,
 };
 use crate::std_shapes::shapes::*;
 
@@ -269,15 +267,7 @@ fn render_html(
 ) {
     match rec {
         HtmlGrid::Text(text) => {
-            render_text(
-                text,
-                loc,
-                size,
-                look,
-                canvas,
-                Option::None,
-                Option::None,
-            );
+            render_text(text, loc, size, look, canvas);
         }
         HtmlGrid::FontTable(table) => {
             render_font_table(
@@ -323,80 +313,44 @@ fn update_location(
 }
 
 fn render_text(
-    rec: &Text,
+    rec: &TextGrid,
     loc: Point,
     size: Point,
     look: &StyleAttr,
     canvas: &mut dyn RenderBackend,
-    clip_handle: Option<ClipHandle>,
-    _clip: Option<ClipHandle>,
 ) {
     let loc0_x = loc.x;
     let mut loc = loc;
-    loc.x -= size.x / 2.;
-    for item in rec {
-        match item {
-            TextItem::Br(_) => {
-                loc.y += look.font_size as f64;
-                loc.x = loc0_x - size.x / 2.;
-            }
-            TextItem::PlainText(text) => {
-                let size_str = get_size_for_str(text, look.font_size);
-                let look = look.clone();
-                loc.x += size_str.x / 2.;
-                let loc2 = update_location(loc, size, text, &look);
-                canvas.draw_text(loc2, text.as_str(), &look);
-                loc.x += size_str.x / 2.;
-            }
-            TextItem::TaggedText(tagged_text) => {
-                let mut look = look.clone();
-                match &tagged_text.tag {
-                    TextTag::B => {
-                        look.font_weight = FontWeight::Bold;
-                    }
-                    TextTag::I => {
-                        look.font_style = FontStyle::Italic;
-                    }
-                    TextTag::U => {
-                        look.text_decoration.underline = true;
-                    }
-                    TextTag::S => {
-                        look.text_decoration.line_through = true;
-                    }
-                    TextTag::Sub => {
-                        look.baseline_shift = BaselineShift::Sub;
-                    }
-                    TextTag::Font(font) => {
-                        if let Some(point_size) = font.point_size {
-                            look.font_size = point_size as usize;
-                        }
-                        if let Some(font_color) = font.color {
-                            look.font_color = font_color;
-                        }
-                        if let Some(ref font_name) = font.face {
-                            look.fontname = font_name.clone();
-                        }
-                    }
-                    TextTag::O => {
-                        look.text_decoration.overline = true;
-                    }
-                    TextTag::Sup => {
-                        look.baseline_shift = BaselineShift::Super;
-                    }
-                }
-                let mut loc3 = loc;
-                loc3.x += size.x / 2.;
-                render_text(
-                    &tagged_text.text_items,
-                    loc3,
-                    size,
-                    &look,
-                    canvas,
-                    clip_handle,
-                    Option::None,
-                );
-            }
+
+    for line in &rec.text_items {
+        let mut line_width = 0.;
+        for t in line {
+            let size_str = get_size_for_str(t.text.as_str(), look.font_size);
+            line_width += size_str.x;
         }
+        loc.x -= line_width / 2.;
+        for t in line {
+            loc.x += get_size_for_str(t.text.as_str(), look.font_size).x / 2.;
+            let mut look = look.clone();
+            if let Some(x) = t.text_style.font.point_size {
+                look.font_size = x as usize;
+            }
+            if let Some(x) = t.text_style.font.color {
+                look.font_color = x;
+            }
+            if let Some(ref x) = t.text_style.font.face {
+                look.fontname = x.clone();
+            }
+            look.font_style = t.text_style.font_style;
+            look.font_weight = t.text_style.font_weight;
+            look.text_decoration = t.text_style.text_decoration;
+            look.baseline_shift = t.text_style.baseline_shift;
+            let loc2 = update_location(loc, size, t.text.as_str(), &look);
+            canvas.draw_text(loc2, t.text.as_str(), &look);
+            loc.x += get_size_for_str(t.text.as_str(), look.font_size).x / 2.;
+        }
+        loc.y += look.font_size as f64;
+        loc.x = loc0_x;
     }
 }
 
