@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg width="734" height="124.5" viewBox="0 0 734 124.5" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<marker id="startarrow" markerWidth="10" markerHeight="7"
+refX="0" refY="3.5" orient="auto">
+<polygon points="10 0, 10 7, 0 3.5" fill="context-stroke" />
+</marker>
+<marker id="endarrow" markerWidth="10" markerHeight="7"
+refX="10" refY="3.5" orient="auto">
+<polygon points="0 0, 10 3.5, 0 7" fill="context-stroke" />
+</marker>
+
+</defs><style>
+</style>
+<g >
+
+            <rect x="30" y="30" width="699" height="59" fill="#ffffffff" 
+            stroke-width="1" stroke="#000000ff" rx="0"  />
+
+            </g>
+<g >
+
+            <rect x="33" y="33" width="89" height="53" fill="#ffffffff" 
+            stroke-width="1" stroke="#000000ff" rx="0"  />
+
+            </g>
+<text dominant-baseline="middle" text-anchor="middle" 
+            x="77.5" y="45.5" font-size="14" font-family="Times,serif"    fill="#000000ff"><tspan x = "77.5" dy="1.0em">line 1</tspan></text><g >
+
+            <rect x="125" y="33" width="75" height="53" fill="#0000ffff" 
+            stroke-width="1" stroke="#000000ff" rx="0"  />
+
+            </g>
+<text dominant-baseline="middle" text-anchor="middle" 
+            x="162.5" y="45.5" font-size="14" font-family="Times,serif" font-style="italic"   fill="#ffffffff"><tspan x = "162.5" dy="1.0em">line2</tspan></text><g >
+
+            <rect x="203" y="33" width="175" height="53" fill="#808080ff" 
+            stroke-width="1" stroke="#000000ff" rx="0"  />
+
+            </g>
+<text dominant-baseline="middle" text-anchor="middle" 
+            x="290.5" y="25.5" font-size="34" font-family="Times,serif"  text-decoration="overline "  fill="#000000ff"><tspan x = "290.5" dy="1.0em">line3</tspan></text><g >
+
+            <rect x="381" y="33" width="197" height="53" fill="#ffff00ff" 
+            stroke-width="1" stroke="#000000ff" rx="0"  />
+
+            </g>
+<text dominant-baseline="middle" text-anchor="middle" 
+            x="419.5" y="35.5" font-size="24" font-family="ambrosia"  text-decoration="underline "  fill="#000000ff"><tspan x = "419.5" dy="1.0em">dfs</tspan></text><text dominant-baseline="middle" text-anchor="middle" 
+            x="515.5" y="35.5" font-size="24" font-family="ambrosia"  text-decoration="underline line-through "  fill="#000000ff"><tspan x = "515.5" dy="1.0em">line4</tspan></text><g >
+
+            <rect x="581" y="33" width="145" height="53" fill="#ffffffff" 
+            stroke-width="1" stroke="#000000ff" rx="0"  />
+
+            </g>
+<g >
+
+            <rect x="583.5" y="52.5" width="140" height="14" fill="#ffffffff" 
+            stroke-width="0" stroke="#000000ff" rx="0"  />
+
+            </g>
+<g >
+
+            <rect x="583.5" y="52.5" width="70" height="14" fill="#ffffffff" 
+            stroke-width="0" stroke="#000000ff" rx="0"  />
+
+            </g>
+<text dominant-baseline="middle" text-anchor="middle" 
+            x="618.5" y="45.5" font-size="14" font-family="cursive"    fill="#008000ff"><tspan x = "618.5" dy="1.0em">Mixed</tspan></text><g >
+
+            <rect x="653.5" y="52.5" width="70" height="14" fill="#ffffffff" 
+            stroke-width="0" stroke="#000000ff" rx="0"  />
+
+            </g>
+<text dominant-baseline="middle" text-anchor="middle" 
+            x="688.5" y="45.5" font-size="14" font-family="Times,serif"   font-weight="bold" fill="#ff0000ff"><tspan x = "688.5" dy="1.0em">fonts</tspan></text></svg>

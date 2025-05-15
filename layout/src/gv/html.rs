@@ -1,7 +1,5 @@
-use crate::core::geometry::{get_size_for_str, pad_shape_scalar, Point};
+use crate::core::geometry::{get_size_for_str, Point};
 use std::collections::HashMap;
-
-use crate::std_shapes::render::BOX_SHAPE_PADDING;
 
 use crate::core::style::{Align, BAlign, StyleAttr, VAlign};
 
@@ -644,7 +642,7 @@ impl HtmlGrid {
                         }
                     }
                 }
-                pad_shape_scalar(size, BOX_SHAPE_PADDING)
+                size
             }
             HtmlGrid::FontTable(table_grid) => table_grid.size(font_size),
         }
@@ -1564,10 +1562,7 @@ impl TableGrid {
 pub(crate) fn get_text_item_size(item: &TextItem, font_size: usize) -> Point {
     match item {
         TextItem::Br(_) => Point::new(1.0, 1.0),
-        TextItem::PlainText(text) => {
-            let size = get_size_for_str(text, font_size);
-            pad_shape_scalar(size, BOX_SHAPE_PADDING)
-        }
+        TextItem::PlainText(text) => get_size_for_str(text, font_size),
         TextItem::TaggedText(tagged_text) => {
             get_tagged_text_size(tagged_text, font_size)
         }

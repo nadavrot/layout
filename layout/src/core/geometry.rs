@@ -282,7 +282,7 @@ pub fn pad_shape_scalar(size: Point, s: f64) -> Point {
 
 #[inline]
 fn get_width_of_line(label: &str) -> usize {
-    label.chars().count() * 2
+    label.chars().count()
 }
 
 /// Estimate the bounding box of some rendered text.
