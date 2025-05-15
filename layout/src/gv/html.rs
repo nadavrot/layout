@@ -2,8 +2,8 @@ use crate::core::geometry::{get_size_for_str, Point};
 use std::collections::HashMap;
 
 use crate::core::style::{
-    Align, BAlign, BaselineShift, FontWeight, StyleAttr, VAlign,
-    FontStyle, TextDecoration
+    Align, BAlign, BaselineShift, FontStyle, FontWeight, StyleAttr,
+    TextDecoration, VAlign,
 };
 
 use crate::core::color::Color;
