@@ -178,6 +178,7 @@ impl Lexer {
 
     pub fn read_string(&mut self) -> Token {
         let mut result = String::new();
+        println!("Reading string");
         self.read_char();
         while self.ch != '"' {
             // Handle escaping
@@ -196,6 +197,7 @@ impl Lexer {
             result.push(self.ch);
             self.read_char();
         }
+        println!("Finished reading string: {}", result);
         Token::Identifier(result)
     }
 
