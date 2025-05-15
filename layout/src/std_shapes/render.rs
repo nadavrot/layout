@@ -139,7 +139,6 @@ fn get_html_port_location(
     html: &HtmlGrid,
     loc: Point,
     size: Point,
-    // look: &StyleAttr,
     visitor: &mut Locator,
 ) -> (Point, Point) {
     match html {
@@ -368,7 +367,6 @@ fn render_text(
                         look.baseline_shift = BaselineShift::Sub;
                     }
                     TextTag::Font(font) => {
-                        // look.font_size = font.point_size;
                         if let Some(point_size) = font.point_size {
                             look.font_size = point_size as usize;
                         }
@@ -459,7 +457,7 @@ fn render_font_table(
     );
 
     for (td_attr, c) in rec.cells.iter() {
-        // let cellpadding = rec.cellpadding(c);
+
         let cellborder = rec.cellborder(c);
         let mut look = look.clone();
 

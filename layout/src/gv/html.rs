@@ -666,13 +666,13 @@ pub enum HtmlMode {
     HtmlTag,
 }
 
-fn is_text_table_wrapper_legal(text: &str) -> bool {
+fn is_text_table_wrapper_invalid(text: &str) -> bool {
     for line in text.lines() {
         if !line.is_empty() {
-            return false;
+            return true;
         }
     }
-    true
+    false
 }
 
 #[derive(Debug, Clone)]
@@ -688,7 +688,6 @@ impl HtmlParser {
     pub fn next_token(&mut self) -> Token {
         match self.mode {
             HtmlMode::Html => self.read_html(),
-            // HtmlMode::HtmlText => self.read_html_text(),
             HtmlMode::HtmlTag => self.read_tag_inside(),
         }
     }
@@ -837,7 +836,7 @@ impl HtmlParser {
         if self.ch != '"' {
             return Token::Error(self.pos);
         }
-        // self.read_char();
+
         let x = self.read_string();
         if let Token::Identifier(s) = x {
             Token::TagAttr(attr_name.to_lowercase(), s.to_lowercase())
@@ -955,12 +954,11 @@ impl HtmlParser {
     }
 
     pub fn parse_table(&mut self) -> Result<FontTable, String> {
-        let mut string_before = false;
+        let mut invalid_string = false;
         if let Token::Identifier(x) = self.tok.clone() {
             // Consume the text.
             self.lex();
-            // string_before = true;
-            string_before = !is_text_table_wrapper_legal(x.as_str());
+            invalid_string = is_text_table_wrapper_invalid(x.as_str());
         }
         let (tag1, table_attr1) = self.parse_tag_start(true)?;
         let (table_tag1, table_attr2) = match tag1 {
@@ -975,7 +973,7 @@ impl HtmlParser {
                         format!("Expected <table>, found {:?}", tag).as_str(),
                     );
                 }
-                if string_before {
+                if invalid_string {
                     return to_error(
                         format!(
                             "cannot have string before table tag: {:?}",
@@ -1021,7 +1019,7 @@ impl HtmlParser {
             self.parse_tag_end(&tag.0, false)?;
 
             if let Token::Identifier(x) = self.tok.clone() {
-                if !is_text_table_wrapper_legal(x.as_str()) {
+                if is_text_table_wrapper_invalid(x.as_str()) {
                     return to_error(
                         format!(
                             "No space after font tag wrapping table: {:?}",
