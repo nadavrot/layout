@@ -8,7 +8,8 @@ digraph structs {
 <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
   <TR><TD PORT="f0">one</TD><TD>two</TD></TR>
 </TABLE>>];
-    struct3 [label=<<B><TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+    struct3 [label=<
+<B><TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
   <TR>
     <TD ROWSPAN="3">hello<BR/>world</TD>
     <TD COLSPAN="3">b</TD>

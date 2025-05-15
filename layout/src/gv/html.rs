@@ -666,7 +666,14 @@ pub enum HtmlMode {
     HtmlTag,
 }
 
-// fn escape_new
+fn is_text_table_wrapper_legal(text: &str) -> bool {
+    for line in text.lines() {
+        if !line.is_empty() {
+            return false;
+        }
+    }
+    true
+}
 
 #[derive(Debug, Clone)]
 struct HtmlParser {
@@ -949,10 +956,11 @@ impl HtmlParser {
 
     pub fn parse_table(&mut self) -> Result<FontTable, String> {
         let mut string_before = false;
-        if let Token::Identifier(_) = self.tok.clone() {
+        if let Token::Identifier(x) = self.tok.clone() {
             // Consume the text.
             self.lex();
-            string_before = true;
+            // string_before = true;
+            string_before = !is_text_table_wrapper_legal(x.as_str());
         }
         let (tag1, table_attr1) = self.parse_tag_start(true)?;
         let (table_tag1, table_attr2) = match tag1 {
@@ -1013,10 +1021,15 @@ impl HtmlParser {
             self.parse_tag_end(&tag.0, false)?;
 
             if let Token::Identifier(x) = self.tok.clone() {
-                return to_error(
-                    format!("No space after font tag wrapping table: {:?}", x)
+                if !is_text_table_wrapper_legal(x.as_str()) {
+                    return to_error(
+                        format!(
+                            "No space after font tag wrapping table: {:?}",
+                            x
+                        )
                         .as_str(),
-                );
+                    );
+                }
             }
         }
         let table_attr = TableAttr::from_attr_list(table_attr2);
