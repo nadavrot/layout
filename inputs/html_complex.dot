@@ -4,7 +4,7 @@ digraph G {
   a [
      label=<
 <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-  <TR><TD ROWSPAN="3" BGCOLOR="yellow">class</TD></TR>
+  <TR><TD ROWSPAN="3" BGCOLOR="yellow"><SUP>class</SUP></TD></TR>
   <TR><TD PORT="here" BGCOLOR="lightblue">qualifier</TD></TR>
 </TABLE>>
   ]

@@ -258,9 +258,22 @@ impl RenderBackend for SVGWriter {
         };
         let text_decoration_str =
             svg_text_decoration_str(&look.text_decoration);
+
+        let baseline_shift_str = match look.baseline_shift {
+            crate::core::style::BaselineShift::Sub => {
+                "dominant-baseline=\"text-bottom\""
+            }
+            crate::core::style::BaselineShift::Super => {
+                "dominant-baseline=\"text-top\""
+            }
+            crate::core::style::BaselineShift::Normal => {
+                "dominant-baseline=\"middle\""
+            }
+        };
         let line = format!(
-            "<text dominant-baseline=\"middle\" text-anchor=\"middle\" 
+            "<text {} text-anchor=\"middle\" 
             x=\"{}\" y=\"{}\" font-size=\"{}\" font-family=\"{}\" {} {} {} fill=\"{}\">{}</text>",
+            baseline_shift_str,
             xy.x,
             xy.y - size_y / 2.,
             font_size,
