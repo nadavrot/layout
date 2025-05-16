@@ -437,8 +437,8 @@ fn render_font_table(
             clip_handle,
         );
         let size = Point::new(
-            cell_size.x - cellborder*2. - cellpadding * 2.,
-            cell_size.y - cellborder*2. - cellpadding * 2.,
+            cell_size.x - cellborder * 2. - cellpadding * 2.,
+            cell_size.y - cellborder * 2. - cellpadding * 2.,
         );
         render_cell(&c, cell_loc, size, &look, canvas);
     }
