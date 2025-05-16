@@ -142,15 +142,6 @@ impl Lexer {
             result.push(self.ch);
             self.read_char();
         }
-        // exception for POINT-SIZE
-        // if result == "POINT" && self.ch == '-' {
-        //     result.push(self.ch);
-        //     self.read_char();
-        //     while self.ch.is_ascii_alphanumeric() || self.ch == '_' {
-        //         result.push(self.ch);
-        //         self.read_char();
-        //     }
-        // }
         result
     }
 
@@ -174,7 +165,6 @@ impl Lexer {
 
     pub fn read_string(&mut self) -> Token {
         let mut result = String::new();
-        println!("Reading string");
         self.read_char();
         while self.ch != '"' {
             // Handle escaping
@@ -193,7 +183,6 @@ impl Lexer {
             result.push(self.ch);
             self.read_char();
         }
-        println!("Finished reading string: {}", result);
         Token::Identifier(result)
     }
 
