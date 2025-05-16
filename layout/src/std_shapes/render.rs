@@ -41,7 +41,7 @@ fn get_record_size(
     }
 }
 
-pub(crate) const BOX_SHAPE_PADDING: f64 = 10.;
+const BOX_SHAPE_PADDING: f64 = 10.;
 const CIRCLE_SHAPE_PADDING: f64 = 20.;
 
 /// Return the size of the shape. If \p make_xy_same is set then make the

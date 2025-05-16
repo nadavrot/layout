@@ -14,7 +14,7 @@ fn to_error<T>(str: &str) -> Result<T, String> {
 }
 
 #[derive(Debug, Clone)]
-pub enum Token {
+enum Token {
     Colon,
     EOF,
     Identifier(String),
@@ -27,7 +27,7 @@ pub enum Token {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum TagType {
+enum TagType {
     Table,
     Tr,
     Td,
@@ -47,7 +47,7 @@ pub enum TagType {
 }
 
 impl TagType {
-    pub fn from_str(tag: &str) -> Self {
+    fn from_str(tag: &str) -> Self {
         // use capital letter for all letters for patter matching
         match tag {
             "table" => TagType::Table,
@@ -68,7 +68,7 @@ impl TagType {
             _ => TagType::Unrecognized,
         }
     }
-    pub fn is_single_tag(&self) -> bool {
+    fn is_single_tag(&self) -> bool {
         match self {
             TagType::Br | TagType::Hr | TagType::Vr | TagType::Img => true,
             _ => false,
@@ -77,7 +77,7 @@ impl TagType {
 }
 
 #[derive(Debug, Clone)]
-pub enum Scale {
+pub(crate) enum Scale {
     False,
     True,
     Width,
@@ -86,14 +86,14 @@ pub enum Scale {
 }
 
 #[derive(Debug, Clone)]
-pub struct Font {
+pub(crate) struct Font {
     pub(crate) color: Option<Color>,
     pub(crate) face: Option<String>,
     pub(crate) point_size: Option<f64>,
 }
 
 impl Font {
-    pub fn new() -> Self {
+    fn new() -> Self {
         Self {
             color: None,
             face: None,
@@ -101,7 +101,7 @@ impl Font {
         }
     }
 
-    pub fn set_attr(&mut self, attr: &str, value: &str) {
+    fn set_attr(&mut self, attr: &str, value: &str) {
         match attr {
             "color" => {
                 self.color = {
@@ -118,7 +118,7 @@ impl Font {
         }
     }
 
-    pub fn from_tag_attr_list(list: Vec<(String, String)>) -> Self {
+    fn from_tag_attr_list(list: Vec<(String, String)>) -> Self {
         let mut font = Self::new();
         for (key, value) in list.iter() {
             font.set_attr(key, value);
@@ -128,7 +128,7 @@ impl Font {
 }
 
 #[derive(Debug, Clone)]
-pub enum TextTag {
+enum TextTag {
     Font(Font),
     I,
     B,
@@ -140,7 +140,7 @@ pub enum TextTag {
 }
 
 impl TextTag {
-    pub fn new(tag: &TagType, tag_attr_list: Vec<(String, String)>) -> Self {
+    fn new(tag: &TagType, tag_attr_list: Vec<(String, String)>) -> Self {
         match tag {
             TagType::Font => {
                 let font = Font::from_tag_attr_list(tag_attr_list);
@@ -158,16 +158,16 @@ impl TextTag {
     }
 }
 
-pub type Text = Vec<TextItem>;
+type Text = Vec<TextItem>;
 
 #[derive(Debug, Clone)]
-pub struct TaggedText {
-    pub text_items: Text,
-    pub tag: TextTag,
+struct TaggedText {
+    text_items: Text,
+    tag: TextTag,
 }
 
 #[derive(Debug, Clone)]
-pub enum TableTag {
+pub(crate) enum TableTag {
     None,
     Font(Font),
     I,
@@ -176,9 +176,7 @@ pub enum TableTag {
     O,
 }
 impl TableTag {
-    pub fn from_tag(
-        tag_pair: Option<(TagType, Vec<(String, String)>)>,
-    ) -> Self {
+    fn from_tag(tag_pair: Option<(TagType, Vec<(String, String)>)>) -> Self {
         if let Some(tag_inner) = tag_pair {
             match tag_inner.0 {
                 TagType::Table => TableTag::None,
@@ -197,28 +195,28 @@ impl TableTag {
     }
 }
 #[derive(Debug, Clone)]
-pub enum LabelOrImg {
+enum LabelOrImg {
     Html(Html),
     Img(Scale, String),
 }
 #[derive(Debug, Clone)]
-pub struct DotCell {
-    pub label: LabelOrImg,
-    pub td_attr: TdAttr,
+struct DotCell {
+    label: LabelOrImg,
+    td_attr: TdAttr,
 }
 
 #[derive(Debug, Clone)]
-pub struct DotCellGrid {
+pub(crate) struct DotCellGrid {
     pub(crate) i: usize,
     pub(crate) j: usize,
     pub(crate) width_in_cell: usize,
     pub(crate) height_in_cell: usize,
-    pub label_grid: LabelOrImgGrid,
-    pub td_attr: TdAttr,
+    pub(crate) label_grid: LabelOrImgGrid,
+    td_attr: TdAttr,
 }
 
 impl DotCellGrid {
-    pub fn from_dot_cell(
+    fn from_dot_cell(
         i: usize,
         j: usize,
         width_in_cell: usize,
@@ -242,23 +240,16 @@ impl DotCellGrid {
             td_attr: dot_cell.td_attr.clone(),
         }
     }
-
-    pub fn size(&self, font_size: usize) -> Point {
-        match &self.label_grid {
-            LabelOrImgGrid::Html(html) => html.size(font_size),
-            LabelOrImgGrid::Img(_, _) => Point::new(0.0, 0.0),
-        }
-    }
 }
 
 #[derive(Debug, Clone)]
-pub enum LabelOrImgGrid {
+pub(crate) enum LabelOrImgGrid {
     Html(HtmlGrid),
     Img(Scale, String),
 }
 
 #[derive(Debug, Clone)]
-pub struct TdAttr {
+pub(crate) struct TdAttr {
     // No inheritance on align, use the most recent value
     align: Align, // CENTER|LEFT|RIGHT
     balign: BAlign,
@@ -296,7 +287,7 @@ pub struct TdAttr {
 }
 
 impl TdAttr {
-    pub fn new() -> Self {
+    fn new() -> Self {
         Self {
             align: Align::Center,
             balign: BAlign::Center,
@@ -323,7 +314,7 @@ impl TdAttr {
         }
     }
 
-    pub fn from_tag_attr_list(list: Vec<(String, String)>) -> Self {
+    fn from_tag_attr_list(list: Vec<(String, String)>) -> Self {
         let mut attr = Self::new();
         for (key, value) in list.iter() {
             attr.set_attr(key, value);
@@ -331,7 +322,7 @@ impl TdAttr {
         attr
     }
 
-    pub fn set_attr(&mut self, attr: &str, value: &str) {
+    fn set_attr(&mut self, attr: &str, value: &str) {
         match attr {
             "align" => {
                 self.align = match value {
@@ -377,7 +368,7 @@ impl TdAttr {
         }
     }
 
-    pub fn update_style_attr(&self, style_attr: &mut StyleAttr) {
+    pub(crate) fn update_style_attr(&self, style_attr: &mut StyleAttr) {
         if let Some(ref color) = self.bgcolor {
             style_attr.fill_color = Color::from_name(color);
         }
@@ -388,13 +379,13 @@ impl TdAttr {
 }
 
 #[derive(Debug, Clone)]
-pub enum ColumnFormat {
+enum ColumnFormat {
     Star,
     None,
 }
 
 impl ColumnFormat {
-    pub fn from_str(s: &str) -> Self {
+    fn from_str(s: &str) -> Self {
         if s.starts_with('*') {
             Self::Star
         } else {
@@ -404,13 +395,13 @@ impl ColumnFormat {
 }
 
 #[derive(Debug, Clone)]
-pub enum RowFormat {
+enum RowFormat {
     Star,
     None,
 }
 
 impl RowFormat {
-    pub fn from_str(s: &str) -> Self {
+    fn from_str(s: &str) -> Self {
         if s.starts_with('*') {
             Self::Star
         } else {
@@ -420,7 +411,7 @@ impl RowFormat {
 }
 
 #[derive(Debug, Clone)]
-pub struct Sides {
+struct Sides {
     left: bool,
     right: bool,
     top: bool,
@@ -428,7 +419,7 @@ pub struct Sides {
 }
 
 impl Sides {
-    pub fn from_str(s: &str) -> Self {
+    fn from_str(s: &str) -> Self {
         let mut sides = Sides {
             left: false,
             right: false,
@@ -449,7 +440,7 @@ impl Sides {
 }
 
 #[derive(Debug, Clone)]
-pub struct TableAttr {
+pub(crate) struct TableAttr {
     // No inheritance on align, use the most recent value
     align: Align,                  // CENTER|LEFT|RIGHT
     valign: VAlign,                // MIDDLE|BOTTOM|TOP
@@ -481,7 +472,7 @@ pub struct TableAttr {
 }
 
 impl TableAttr {
-    pub fn new() -> Self {
+    fn new() -> Self {
         Self {
             align: Align::Center,
             bgcolor: None,
@@ -507,7 +498,7 @@ impl TableAttr {
             width: None,
         }
     }
-    pub fn from_attr_list(list: Vec<(String, String)>) -> Self {
+    fn from_attr_list(list: Vec<(String, String)>) -> Self {
         let mut attr = Self::new();
         for (key, value) in list.iter() {
             attr.set_attr(key, value);
@@ -515,7 +506,7 @@ impl TableAttr {
         attr
     }
 
-    pub fn set_attr(&mut self, attr: &str, value: &str) {
+    fn set_attr(&mut self, attr: &str, value: &str) {
         let attr = attr.to_lowercase();
         match attr.as_str() {
             "align" => {
@@ -571,7 +562,7 @@ impl TableAttr {
             _ => {}
         }
     }
-    pub fn update_style_attr(&self, style_attr: &mut StyleAttr) {
+    pub(crate) fn update_style_attr(&self, style_attr: &mut StyleAttr) {
         if let Some(ref color) = self.bgcolor {
             style_attr.fill_color = Some(color.clone());
         }
@@ -580,43 +571,37 @@ impl TableAttr {
     }
 }
 #[derive(Debug, Clone)]
-pub struct FontTable {
-    pub rows: Vec<(Row, Option<Hr>)>,
-    pub tag: TableTag,
-    pub table_attr: TableAttr,
+struct FontTable {
+    rows: Vec<(Row, Option<Hr>)>,
+    tag: TableTag,
+    table_attr: TableAttr,
 }
 #[derive(Debug, Clone)]
-pub struct Vr {}
+struct Vr {}
 
 #[derive(Debug, Clone)]
-pub struct Hr {}
+struct Hr {}
 
 #[derive(Debug, Clone)]
-pub struct Row {
-    pub cells: Vec<(DotCell, Option<Vr>)>,
+struct Row {
+    cells: Vec<(DotCell, Option<Vr>)>,
 }
 
 #[derive(Debug, Clone)]
-pub enum TextItem {
+enum TextItem {
     TaggedText(TaggedText),
     Br(Align),
     PlainText(String),
 }
 
 #[derive(Debug, Clone)]
-pub enum Html {
+enum Html {
     Text(Text),
     FontTable(FontTable),
 }
 
-impl Html {
-    // fn new_text() -> Self {
-
-    // }
-}
-
 #[derive(Debug, Clone)]
-pub struct TextStyle {
+pub(crate) struct TextStyle {
     pub(crate) font: Font,
     pub(crate) font_style: FontStyle,
     pub(crate) font_weight: FontWeight,
@@ -625,12 +610,12 @@ pub struct TextStyle {
 }
 
 #[derive(Debug, Clone)]
-pub struct PlainTextGrid {
+pub(crate) struct PlainTextGrid {
     pub(crate) text: String,
     pub(crate) text_style: TextStyle,
 }
 #[derive(Debug, Clone)]
-pub struct TextGrid {
+pub(crate) struct TextGrid {
     // each line is a vector of PlainTextGrid
     // as a whole it represent multiline text
     pub(crate) text_items: Vec<Vec<PlainTextGrid>>,
@@ -638,13 +623,13 @@ pub struct TextGrid {
 }
 
 impl TextGrid {
-    pub fn new() -> Self {
+    fn new() -> Self {
         Self {
             text_items: vec![],
             br: vec![],
         }
     }
-    pub fn collect_from_text(&mut self, text: &Text, text_style: &TextStyle) {
+    fn collect_from_text(&mut self, text: &Text, text_style: &TextStyle) {
         for item in text.iter() {
             match item {
                 TextItem::TaggedText(tagged_text) => {
@@ -697,7 +682,7 @@ impl TextGrid {
         }
     }
 
-    pub fn width(&self, font_size: usize) -> f64 {
+    fn width(&self, font_size: usize) -> f64 {
         let mut width = 0.0;
         for line in self.text_items.iter() {
             let mut line_width = 0.0;
@@ -711,7 +696,7 @@ impl TextGrid {
         }
         width
     }
-    pub fn height(&self, font_size: usize) -> f64 {
+    fn height(&self, font_size: usize) -> f64 {
         let mut height = 0.0;
         for line in self.text_items.iter() {
             // TODO: we are going with the last with the assumption that heigh is the same for every plaintext,
@@ -726,13 +711,13 @@ impl TextGrid {
 }
 
 #[derive(Debug, Clone)]
-pub enum HtmlGrid {
+pub(crate) enum HtmlGrid {
     Text(TextGrid),
     FontTable(TableGrid),
 }
 
 impl HtmlGrid {
-    pub fn size(&self, font_size: usize) -> Point {
+    pub(crate) fn size(&self, font_size: usize) -> Point {
         match self {
             HtmlGrid::Text(text) => {
                 Point::new(text.width(font_size), text.height(font_size))
@@ -740,7 +725,7 @@ impl HtmlGrid {
             HtmlGrid::FontTable(table_grid) => table_grid.size(font_size),
         }
     }
-    pub fn from_html(html: &Html) -> Self {
+    fn from_html(html: &Html) -> Self {
         match html {
             // Html::Text(text) => HtmlGrid::Text(text.clone()),
             Html::Text(text) => {
@@ -763,7 +748,7 @@ impl HtmlGrid {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum HtmlMode {
+enum HtmlMode {
     Html,
     HtmlTag,
 }
@@ -787,13 +772,13 @@ struct HtmlParser {
 }
 
 impl HtmlParser {
-    pub fn next_token(&mut self) -> Token {
+    fn next_token(&mut self) -> Token {
         match self.mode {
             HtmlMode::Html => self.read_html(),
             HtmlMode::HtmlTag => self.read_tag_inside(),
         }
     }
-    pub fn lex(&mut self) {
+    fn lex(&mut self) {
         match self.tok {
             Token::Error(pos) => {
                 panic!("can't parse after error at {}", pos);
@@ -807,7 +792,7 @@ impl HtmlParser {
             }
         }
     }
-    pub fn skip_whitespace(&mut self) -> bool {
+    fn skip_whitespace(&mut self) -> bool {
         let mut changed = false;
         while self.ch.is_ascii_whitespace() {
             self.read_char();
@@ -815,10 +800,10 @@ impl HtmlParser {
         }
         changed
     }
-    pub fn has_next(&self) -> bool {
+    fn has_next(&self) -> bool {
         self.pos < self.input.len()
     }
-    pub fn read_char(&mut self) {
+    fn read_char(&mut self) {
         if !self.has_next() {
             self.ch = '\0';
         } else {
@@ -827,7 +812,7 @@ impl HtmlParser {
         }
     }
 
-    pub fn read_tag_inside(&mut self) -> Token {
+    fn read_tag_inside(&mut self) -> Token {
         let tok: Token;
         while self.skip_whitespace() {}
         if self.ch == '>' {
@@ -849,7 +834,7 @@ impl HtmlParser {
         self.read_char();
         tok
     }
-    pub fn read_html_text(&mut self) -> Token {
+    fn read_html_text(&mut self) -> Token {
         let mut result = String::new();
         while self.ch != '<' && self.ch != '\0' && self.ch != '>' {
             result.push(self.ch);
@@ -858,7 +843,7 @@ impl HtmlParser {
         }
         Token::Identifier(result)
     }
-    pub fn read_html(&mut self) -> Token {
+    fn read_html(&mut self) -> Token {
         let mut tag_name = String::new();
         if self.ch == '\0' {
             return Token::EOF;
@@ -898,7 +883,7 @@ impl HtmlParser {
             Token::OpeningTag(TagType::from_str(&tag_name))
         }
     }
-    pub fn read_string(&mut self) -> Token {
+    fn read_string(&mut self) -> Token {
         let mut result = String::new();
         self.read_char();
         while self.ch != '"' {
@@ -920,7 +905,7 @@ impl HtmlParser {
         }
         Token::Identifier(result)
     }
-    pub fn read_tag_attr(&mut self) -> Token {
+    fn read_tag_attr(&mut self) -> Token {
         let mut attr_name = String::new();
         while self.skip_whitespace() {}
         while self.ch != '=' && self.ch != '>' && self.ch != '\0' {
@@ -947,7 +932,7 @@ impl HtmlParser {
         }
     }
     // Parse HTML-like label content between < and >
-    pub fn parse_html_label(&mut self) -> Result<Html, String> {
+    fn parse_html_label(&mut self) -> Result<Html, String> {
         let is_table = self.is_table()?;
 
         if is_table {
@@ -957,7 +942,7 @@ impl HtmlParser {
         }
     }
 
-    pub fn parse_text(&mut self) -> Result<Text, String> {
+    fn parse_text(&mut self) -> Result<Text, String> {
         let mut text_items = vec![];
         loop {
             match self.tok {
@@ -971,7 +956,7 @@ impl HtmlParser {
         Ok(text_items)
     }
 
-    pub fn is_table(&self) -> Result<bool, String> {
+    fn is_table(&self) -> Result<bool, String> {
         // check if the current token is a table tag with a look ahead of distance 2
         // check if cloing is necessary
         let mut parser = self.clone();
@@ -1003,7 +988,7 @@ impl HtmlParser {
         Ok(false)
     }
 
-    pub fn parse_text_item(&mut self) -> Result<TextItem, String> {
+    fn parse_text_item(&mut self) -> Result<TextItem, String> {
         Ok(match self.tok.clone() {
             Token::Identifier(x) => {
                 self.lex();
@@ -1055,7 +1040,7 @@ impl HtmlParser {
         })
     }
 
-    pub fn parse_table(&mut self) -> Result<FontTable, String> {
+    fn parse_table(&mut self) -> Result<FontTable, String> {
         let mut invalid_string = false;
         if let Token::Identifier(x) = self.tok.clone() {
             // Consume the text.
@@ -1141,7 +1126,7 @@ impl HtmlParser {
         })
     }
 
-    pub fn parse_tag_attr_list(
+    fn parse_tag_attr_list(
         &mut self,
         tag_type: TagType,
     ) -> Result<Vec<(String, String)>, String> {
@@ -1176,7 +1161,7 @@ impl HtmlParser {
 
         Ok(lst)
     }
-    pub fn parse_row(&mut self) -> Result<Row, String> {
+    fn parse_row(&mut self) -> Result<Row, String> {
         let (tag_type, _attr_list) = self.parse_tag_start(true)?;
         if tag_type != TagType::Tr {
             return to_error(
@@ -1211,7 +1196,7 @@ impl HtmlParser {
         Ok(Row { cells })
     }
 
-    pub fn parse_cell(&mut self) -> Result<DotCell, String> {
+    fn parse_cell(&mut self) -> Result<DotCell, String> {
         let (tag_type, attr_list) = self.parse_tag_start(false)?;
         if tag_type != TagType::Td {
             return to_error(
@@ -1226,7 +1211,7 @@ impl HtmlParser {
         })
     }
 
-    pub fn parse_tag_start(
+    fn parse_tag_start(
         &mut self,
         pass_identifier: bool,
     ) -> Result<(TagType, Vec<(String, String)>), String> {
@@ -1274,7 +1259,7 @@ impl HtmlParser {
         Ok((tag_type, tag_attr_list))
     }
 
-    pub fn parse_tag_end(
+    fn parse_tag_end(
         &mut self,
         tag: &TagType,
         pass_identifier: bool,
@@ -1304,7 +1289,7 @@ impl HtmlParser {
     }
 }
 
-pub fn parse_html_string(input: &str) -> Result<HtmlGrid, String> {
+pub(crate) fn parse_html_string(input: &str) -> Result<HtmlGrid, String> {
     let mut parser = HtmlParser {
         input: input.chars().collect(),
         pos: 0,
@@ -1325,13 +1310,13 @@ struct TableGridInner {
 }
 
 impl TableGridInner {
-    pub fn width(&self) -> usize {
+    fn width(&self) -> usize {
         self.occupation.keys().map(|(x, _)| *x).max().unwrap_or(0) + 1
     }
-    pub fn height(&self) -> usize {
+    fn height(&self) -> usize {
         self.occupation.keys().map(|(_, y)| *y).max().unwrap_or(0) + 1
     }
-    pub fn pretty_print(&self) {
+    fn pretty_print(&self) {
         // print in a table format with + indicating occupied and - indicating free
         let width = self.width();
         let height = self.height();
@@ -1346,7 +1331,7 @@ impl TableGridInner {
             println!();
         }
     }
-    pub fn add_cell(
+    fn add_cell(
         &mut self,
         x: usize,
         y: usize,
@@ -1373,7 +1358,7 @@ impl TableGridInner {
         self.occupation.contains_key(&(x, y))
     }
 
-    pub fn from_table(font_table: &FontTable) -> Self {
+    fn from_table(font_table: &FontTable) -> Self {
         let mut width = 0;
         let mut height = 0;
         let mut y_current = 0;
@@ -1438,7 +1423,7 @@ impl TableGridInner {
 }
 
 #[derive(Debug, Clone)]
-pub struct TableGrid {
+pub(crate) struct TableGrid {
     pub(crate) cells: Vec<(TdAttr, DotCellGrid)>,
     pub(crate) grid: Vec<Option<usize>>,
     pub(crate) width_arr: Vec<f64>, // width in svg units
@@ -1451,19 +1436,19 @@ pub struct TableGrid {
 }
 
 impl TableGrid {
-    pub fn width(&self) -> f64 {
+    pub(crate) fn width(&self) -> f64 {
         self.width_arr.iter().sum::<f64>()
             + (self.table_attr.cellspacing as usize * (self.width_in_cell + 1))
                 as f64
             + self.table_attr.border as f64 * 2.
     }
-    pub fn height(&self) -> f64 {
+    pub(crate) fn height(&self) -> f64 {
         self.height_arr.iter().sum::<f64>()
             + (self.table_attr.cellspacing as usize * (self.height_in_cell + 1))
                 as f64
             + self.table_attr.border as f64 * 2.
     }
-    pub fn size(&self, font_size: usize) -> Point {
+    fn size(&self, font_size: usize) -> Point {
         if font_size != self.font_size {
             let mut table_grid = self.clone();
             table_grid.resize(font_size);
@@ -1472,7 +1457,7 @@ impl TableGrid {
             Point::new(self.width(), self.height())
         }
     }
-    pub fn cell_pos(&self, d: &DotCellGrid) -> Point {
+    pub(crate) fn cell_pos(&self, d: &DotCellGrid) -> Point {
         let idx = d.i;
         let x = self.width_arr.iter().take(idx).sum::<f64>()
             + (self.table_attr.cellspacing as usize * (idx + 1)) as f64
@@ -1486,7 +1471,7 @@ impl TableGrid {
 
         Point::new(x, y)
     }
-    pub fn cell_size(&self, dot_cell_grid: &DotCellGrid) -> Point {
+    pub(crate) fn cell_size(&self, dot_cell_grid: &DotCellGrid) -> Point {
         let mut height = 0f64;
         for i in
             dot_cell_grid.j..(dot_cell_grid.j + dot_cell_grid.height_in_cell)
@@ -1508,7 +1493,7 @@ impl TableGrid {
         Point::new(width, height)
     }
 
-    pub fn from_table(font_table: &FontTable) -> Self {
+    fn from_table(font_table: &FontTable) -> Self {
         let table_grid_inner = TableGridInner::from_table(font_table);
         let width_in_cell = table_grid_inner.width();
         let height_in_cell = table_grid_inner.height();
@@ -1538,7 +1523,7 @@ impl TableGrid {
         }
     }
 
-    pub fn get_cell(&self, i: usize, j: usize) -> Option<&DotCellGrid> {
+    fn get_cell(&self, i: usize, j: usize) -> Option<&DotCellGrid> {
         if i < self.width_in_cell && j < self.height_in_cell {
             let index = self.grid[(j * (self.width_in_cell)) + i];
             if let Some(i) = index {
@@ -1548,11 +1533,7 @@ impl TableGrid {
         None
     }
 
-    pub fn get_cell_mut(
-        &mut self,
-        i: usize,
-        j: usize,
-    ) -> Option<&mut DotCellGrid> {
+    fn get_cell_mut(&mut self, i: usize, j: usize) -> Option<&mut DotCellGrid> {
         if i < self.width_in_cell && j < self.height_in_cell {
             let index = self.grid[(j * (self.width_in_cell)) + i];
             if let Some(i) = index {
@@ -1584,7 +1565,7 @@ impl TableGrid {
         cellborder
     }
 
-    pub fn resize(&mut self, font_size: usize) {
+    pub(crate) fn resize(&mut self, font_size: usize) {
         // TODO: can check if font size is updated
         for x in 0..self.width_in_cell {
             let mut max_width = 0f64;
