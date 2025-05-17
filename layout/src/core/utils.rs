@@ -14,7 +14,6 @@ pub fn save_to_file(filename: &str, content: &str) -> Result<(), Error> {
 }
 
 pub(crate) fn get_image_size(filename: &str) -> Result<(u32, u32), Error> {
-    
     if let Ok(image_size) = get_png_size(filename) {
         return Ok(image_size);
     }
@@ -26,7 +25,6 @@ pub(crate) fn get_image_size(filename: &str) -> Result<(u32, u32), Error> {
         "Unsupported image format",
     ))
 }
-
 
 fn get_png_size(filename: &str) -> Result<(u32, u32), Error> {
     let mut f = File::open(filename)?;
