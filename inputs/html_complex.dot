@@ -10,7 +10,7 @@ digraph G {
   ]
   b [shape=ellipse style=filled
      label=<
-<TABLE BGCOLOR="bisque">
+<I><TABLE BGCOLOR="bisque">
   <TR>
       <TD COLSPAN="3">elephant</TD> 
       <TD ROWSPAN="2" BGCOLOR="chartreuse" 
@@ -29,7 +29,7 @@ digraph G {
   <TR>
     <TD COLSPAN="2" BORDER="4" ALIGN="right" PORT="there">4</TD>
   </TR>
-</TABLE>>
+</TABLE></I>>
   ]
   c [ 
   label=<long line 1<BR/>line 2<BR ALIGN="LEFT"/>line 3<BR ALIGN="RIGHT"/>>

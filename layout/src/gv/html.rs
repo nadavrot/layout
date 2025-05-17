@@ -1187,13 +1187,6 @@ impl TableAttr {
             _ => {}
         }
     }
-    pub(crate) fn update_style_attr(&self, style_attr: &mut StyleAttr) {
-        if let Some(ref color) = self.bgcolor {
-            style_attr.fill_color = Some(color.clone());
-        }
-        style_attr.valign = self.valign.clone();
-        style_attr.align = self.align.clone();
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -1344,6 +1337,10 @@ impl TextGrid {
         for line in self.text_items.iter() {
             let mut line_width = 0.0;
             for item in line.iter() {
+                let font_size = match item.text_style.font.point_size {
+                    Some(size) => size as usize,
+                    None => font_size,
+                };
                 let text_size = get_size_for_str(&item.text, font_size);
                 line_width += text_size.x;
             }
@@ -1358,12 +1355,52 @@ impl TextGrid {
         for line in self.text_items.iter() {
             // TODO: we are going with the last with the assumption that heigh is the same for every plaintext,
             // which is correct for the current get_size_for_str implementation
-            if let Some(last_line) = line.last() {
-                let text_size = get_size_for_str(&last_line.text, font_size);
-                height += text_size.y;
+            let mut line_height = 0.0;
+            for item in line.iter() {
+                let font_size = match item.text_style.font.point_size {
+                    Some(size) => size as usize,
+                    None => font_size,
+                };
+                let text_size = get_size_for_str(&item.text, font_size);
+                if line_height < text_size.y {
+                    line_height = text_size.y;
+                }
             }
+            height += line_height;
         }
         height
+    }
+}
+
+impl PlainText {
+    pub(crate) fn width(&self, font_size: usize) -> f64 {
+        let font_size = match self.text_style.font.point_size {
+            Some(size) => size as usize,
+            None => font_size,
+        };
+        get_size_for_str(&self.text, font_size).x
+    }
+
+    pub(crate) fn update_style_attr(&self, style_attr: &mut StyleAttr) {
+        if let Some(font_size) = self.text_style.font.point_size {
+            style_attr.font_size = font_size as usize;
+        }
+
+        if let Some(ref color) = self.text_style.font.color {
+            style_attr.font_color = color.clone();
+        }
+
+        if let Some(ref face) = self.text_style.font.face {
+            style_attr.fontname = face.clone();
+        }
+
+        style_attr.font_style = self.text_style.font_style.clone();
+        match self.text_style.font_weight {
+            FontWeight::Bold => style_attr.font_weight = FontWeight::Bold,
+            FontWeight::None => {}
+        }
+        style_attr.text_decoration = self.text_style.text_decoration.clone();
+        style_attr.baseline_shift = self.text_style.baseline_shift.clone();
     }
 }
 
@@ -1383,7 +1420,7 @@ impl HtmlGrid {
                 let text_style = TextStyle {
                     font: Font::new(),
                     font_style: FontStyle::Normal,
-                    font_weight: FontWeight::Normal,
+                    font_weight: FontWeight::None,
                     text_decoration: TextDecoration::new(),
                     baseline_shift: BaselineShift::Normal,
                 };
@@ -1714,5 +1751,41 @@ impl TableGrid {
 
         // update the font size
         self.font_size = font_size;
+    }
+
+    pub(crate) fn update_style_attr(&self, style_attr: &mut StyleAttr) {
+        if let Some(ref color) = self.table_attr.bgcolor {
+            style_attr.fill_color = Some(color.clone());
+        }
+        style_attr.valign = self.table_attr.valign.clone();
+        style_attr.align = self.table_attr.align.clone();
+        style_attr.line_width = self.table_attr.border as usize;
+
+        match &self.table_tag {
+            TableTag::B => {
+                style_attr.font_weight = FontWeight::Bold;
+            }
+            TableTag::I => {
+                style_attr.font_style = FontStyle::Italic;
+            }
+            TableTag::U => {
+                style_attr.text_decoration.underline = true;
+            }
+            TableTag::O => {
+                style_attr.text_decoration.overline = true;
+            }
+            TableTag::Font(font) => {
+                if let Some(point_size) = font.point_size {
+                    style_attr.font_size = point_size as usize;
+                }
+                if let Some(font_color) = font.color {
+                    style_attr.font_color = font_color;
+                }
+                if let Some(ref font_name) = font.face {
+                    style_attr.fontname = font_name.clone();
+                }
+            }
+            TableTag::None => {}
+        }
     }
 }

@@ -3,11 +3,9 @@
 use crate::core::base::Orientation;
 use crate::core::format::{ClipHandle, RenderBackend, Renderable, Visible};
 use crate::core::geometry::*;
-use crate::core::style::{
-    Align, FontStyle, FontWeight, LineStyleKind, StyleAttr, VAlign,
-};
+use crate::core::style::{Align, LineStyleKind, StyleAttr, VAlign};
 use crate::gv::html::{
-    DotCellGrid, HtmlGrid, LabelOrImgGrid, Scale, TableGrid, TableTag, TextGrid,
+    DotCellGrid, HtmlGrid, LabelOrImgGrid, Scale, TableGrid, TextGrid,
 };
 use crate::std_shapes::shapes::*;
 
@@ -325,29 +323,17 @@ fn render_text(
     for line in &rec.text_items {
         let mut line_width = 0.;
         for t in line {
-            let size_str = get_size_for_str(t.text.as_str(), look.font_size);
-            line_width += size_str.x;
+            line_width += t.width(look.font_size);
         }
         loc.x -= line_width / 2.;
         for t in line {
-            loc.x += get_size_for_str(t.text.as_str(), look.font_size).x / 2.;
             let mut look = look.clone();
-            if let Some(x) = t.text_style.font.point_size {
-                look.font_size = x as usize;
-            }
-            if let Some(x) = t.text_style.font.color {
-                look.font_color = x;
-            }
-            if let Some(ref x) = t.text_style.font.face {
-                look.fontname = x.clone();
-            }
-            look.font_style = t.text_style.font_style;
-            look.font_weight = t.text_style.font_weight;
-            look.text_decoration = t.text_style.text_decoration;
-            look.baseline_shift = t.text_style.baseline_shift;
+            t.update_style_attr(&mut look);
+            let text_size = get_size_for_str(t.text.as_str(), look.font_size);
+            loc.x += text_size.x / 2.;
             let loc2 = update_location(loc, size, t.text.as_str(), &look);
             canvas.draw_text(loc2, t.text.as_str(), &look);
-            loc.x += get_size_for_str(t.text.as_str(), look.font_size).x / 2.;
+            loc.x += text_size.x / 2.;
         }
         loc.y += look.font_size as f64;
         loc.x = loc0_x;
@@ -363,36 +349,8 @@ fn render_font_table(
     _clip: Option<ClipHandle>,
 ) {
     let mut look = look.clone();
-    look.line_width = rec.table_attr.border as usize;
 
-    match &rec.table_tag {
-        TableTag::B => {
-            look.font_weight = FontWeight::Bold;
-        }
-        TableTag::I => {
-            look.font_style = FontStyle::Italic;
-        }
-        TableTag::U => {
-            look.text_decoration.underline = true;
-        }
-        TableTag::O => {
-            look.text_decoration.overline = true;
-        }
-        TableTag::Font(font) => {
-            if let Some(point_size) = font.point_size {
-                look.font_size = point_size as usize;
-            }
-            if let Some(font_color) = font.color {
-                look.font_color = font_color;
-            }
-            if let Some(ref font_name) = font.face {
-                look.fontname = font_name.clone();
-            }
-        }
-        TableTag::None => {}
-    }
-
-    rec.table_attr.update_style_attr(&mut look);
+    rec.update_style_attr(&mut look);
     let table_grid_width = rec.width();
     let table_grid_height = rec.height();
     let loc0 = Point::new(
@@ -463,6 +421,7 @@ fn render_cell(
             );
         }
         LabelOrImgGrid::Img(img) => {
+            // TODO: Need to introduce setting to control file access as specificed by ofifical graphviz source
             let mut look = look.clone();
             look.fill_color = Option::None;
             let image_size = img.size();

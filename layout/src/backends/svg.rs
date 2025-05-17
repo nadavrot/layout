@@ -2,7 +2,7 @@
 
 use crate::core::color::Color;
 use crate::core::format::{ClipHandle, RenderBackend};
-use crate::core::geometry::Point;
+use crate::core::geometry::{get_size_for_str, Point};
 use crate::core::style::{StyleAttr, TextDecoration};
 use std::collections::HashMap;
 
@@ -237,10 +237,9 @@ impl RenderBackend for SVGWriter {
         let font_color = look.font_color;
         let font_size = look.font_size;
         let font_family = look.fontname.clone();
+        let size = get_size_for_str(text, font_size);
 
         let mut content = String::new();
-        let cnt = 1 + text.lines().count();
-        let size_y = (cnt * look.font_size) as f64;
         for line in text.lines() {
             content.push_str(&format!("<tspan x = \"{}\" dy=\"1.0em\">", xy.x));
             content.push_str(&escape_string(line));
@@ -254,7 +253,7 @@ impl RenderBackend for SVGWriter {
         };
         let font_weight_text = match look.font_weight {
             crate::core::style::FontWeight::Bold => "font-weight=\"bold\"",
-            crate::core::style::FontWeight::Normal => "",
+            crate::core::style::FontWeight::None => "",
         };
         let text_decoration_str =
             svg_text_decoration_str(&look.text_decoration);
@@ -267,7 +266,7 @@ impl RenderBackend for SVGWriter {
                 "dominant-baseline=\"text-top\""
             }
             crate::core::style::BaselineShift::Normal => {
-                "dominant-baseline=\"middle\""
+                "dominant-baseline=\"auto\""
             }
         };
         let line = format!(
@@ -275,7 +274,7 @@ impl RenderBackend for SVGWriter {
             x=\"{}\" y=\"{}\" font-size=\"{}\" font-family=\"{}\" {} {} {} fill=\"{}\">{}</text>",
             baseline_shift_str,
             xy.x,
-            xy.y - size_y / 2.,
+            xy.y - size.y / 2.,
             font_size,
             font_family,
             font_style_text,

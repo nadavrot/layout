@@ -61,7 +61,7 @@ pub(crate) enum FontStyle {
 
 #[derive(Debug, Copy, Clone)]
 pub(crate) enum FontWeight {
-    Normal,
+    None,
     Bold,
 }
 
@@ -126,7 +126,7 @@ impl StyleAttr {
             font_size,
             fontname,
             font_style: FontStyle::Normal,
-            font_weight: FontWeight::Normal,
+            font_weight: FontWeight::None,
             text_decoration: TextDecoration::new(),
             baseline_shift: BaselineShift::Normal,
             align: Align::Center,
