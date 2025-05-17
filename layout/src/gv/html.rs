@@ -1045,13 +1045,16 @@ impl TdAttr {
         }
     }
 
-    pub(crate) fn update_style_attr(&self, style_attr: &mut StyleAttr) {
+    pub(crate) fn build_style_attr(&self, style_attr: &StyleAttr) -> StyleAttr {
+        let mut style_attr = style_attr.clone();
         if let Some(ref color) = self.bgcolor {
             style_attr.fill_color = Color::from_name(color);
         }
         style_attr.valign = self.valign.clone();
         style_attr.align = self.align.clone();
         style_attr.balign = self.balign.clone();
+
+        style_attr
     }
 }
 
@@ -1396,7 +1399,8 @@ impl PlainText {
         get_size_for_str(&self.text, font_size).x
     }
 
-    pub(crate) fn update_style_attr(&self, style_attr: &mut StyleAttr) {
+    pub(crate) fn build_style_attr(&self, style_attr: &StyleAttr) -> StyleAttr {
+        let mut style_attr = style_attr.clone();
         if let Some(font_size) = self.text_style.font.point_size {
             style_attr.font_size = font_size as usize;
         }
@@ -1419,6 +1423,8 @@ impl PlainText {
         }
         style_attr.text_decoration = self.text_style.text_decoration.clone();
         style_attr.baseline_shift = self.text_style.baseline_shift.clone();
+
+        style_attr
     }
 }
 
@@ -1771,7 +1777,8 @@ impl TableGrid {
         self.font_size = font_size;
     }
 
-    pub(crate) fn update_style_attr(&self, style_attr: &mut StyleAttr) {
+    pub(crate) fn build_style_attr(&self, style_attr: &StyleAttr) -> StyleAttr {
+        let mut style_attr = style_attr.clone();
         if let Some(ref color) = self.table_attr.bgcolor {
             style_attr.fill_color = Some(color.clone());
         }
@@ -1805,5 +1812,7 @@ impl TableGrid {
             }
             TableTag::None => {}
         }
+
+        style_attr
     }
 }

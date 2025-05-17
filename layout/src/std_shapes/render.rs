@@ -258,7 +258,6 @@ fn render_record(
 
 fn render_html(
     rec: &HtmlGrid,
-    _dir: Orientation,
     loc: Point,
     size: Point,
     look: &StyleAttr,
@@ -269,14 +268,7 @@ fn render_html(
             render_text(text, loc, size, look, canvas);
         }
         HtmlGrid::FontTable(table) => {
-            render_font_table(
-                table,
-                loc,
-                look,
-                canvas,
-                Option::None,
-                Option::None,
-            );
+            render_font_table(table, loc, look, canvas);
         }
     }
 }
@@ -318,7 +310,7 @@ fn render_text(
     look: &StyleAttr,
     canvas: &mut dyn RenderBackend,
 ) {
-    let loc0_x = loc.x;
+    let loc_0_x = loc.x;
     let mut loc = loc;
 
     loc.y -= rec.height(look.font_size) / 2.;
@@ -328,18 +320,16 @@ fn render_text(
         for t in line {
             line_width += t.width(look.font_size);
         }
-        loc.x -= line_width / 2.;
+        loc.x = loc_0_x - line_width / 2.;
         for t in line {
-            let mut look = look.clone();
-            t.update_style_attr(&mut look);
-            let text_size = get_size_for_str(t.text.as_str(), look.font_size);
+            let look_text = t.build_style_attr(look);
+            let text_size = get_size_for_str(&t.text, look_text.font_size);
             loc.x += text_size.x / 2.;
-            let loc2 = update_location(loc, size, t.text.as_str(), &look);
-            canvas.draw_text(loc2, t.text.as_str(), &look);
+            let loc_text = update_location(loc, size, &t.text, &look_text);
+            canvas.draw_text(loc_text, t.text.as_str(), &look_text);
             loc.x += text_size.x / 2.;
         }
         loc.y += get_line_height(line, look.font_size);
-        loc.x = loc0_x;
     }
 }
 
@@ -348,60 +338,60 @@ fn render_font_table(
     loc: Point,
     look: &StyleAttr,
     canvas: &mut dyn RenderBackend,
-    clip_handle: Option<ClipHandle>,
-    _clip: Option<ClipHandle>,
 ) {
-    let mut look = look.clone();
-
-    rec.update_style_attr(&mut look);
+    let look = rec.build_style_attr(look);
     let table_grid_width = rec.width();
     let table_grid_height = rec.height();
-    let loc0 = Point::new(
+
+    // top left origin location of the table
+    let loc_0 = Point::new(
         loc.x - table_grid_width / 2.,
         loc.y - table_grid_height / 2.,
     );
     canvas.draw_rect(
-        loc0,
+        loc_0,
         Point::new(
             table_grid_width - rec.table_attr.border as f64,
             table_grid_height - rec.table_attr.border as f64,
         ),
         &look,
         Option::None,
-        clip_handle,
+        Option::None,
     );
 
     for (td_attr, c) in rec.cells.iter() {
         let cellpadding = rec.cellpadding(c);
         let cellborder = rec.cellborder(c);
-        let mut look = look.clone();
-
-        td_attr.update_style_attr(&mut look);
-
         let cell_size = rec.cell_size(c);
         let cell_origin = rec.cell_pos(c);
+
+        // center of the cell
         let cell_loc = Point::new(
-            loc0.x + cell_origin.x + cell_size.x * 0.5,
-            loc0.y + cell_origin.y + cell_size.y * 0.5,
+            loc_0.x + cell_origin.x + cell_size.x * 0.5,
+            loc_0.y + cell_origin.y + cell_size.y * 0.5,
         );
-        let mut look_border = look.clone();
-        look_border.line_width = cellborder as usize;
+        let look_cell = td_attr.build_style_attr(&look);
+
+        let mut look_cell_border = look.clone();
+        look_cell_border.line_width = cellborder as usize;
 
         canvas.draw_rect(
             Point::new(
-                loc0.x + cell_origin.x + look_border.line_width as f64 * 0.5,
-                loc0.y + cell_origin.y + look_border.line_width as f64 * 0.5,
+                loc_0.x + cell_origin.x + cellborder * 0.5,
+                loc_0.y + cell_origin.y + cellborder * 0.5,
             ),
             cell_size.sub(Point::splat(cellborder)),
-            &look_border,
+            &look_cell_border,
             Option::None,
-            clip_handle,
+            Option::None,
         );
+
+        // cell inside
         let size = Point::new(
             cell_size.x - cellborder * 2. - cellpadding * 2.,
             cell_size.y - cellborder * 2. - cellpadding * 2.,
         );
-        render_cell(&c, cell_loc, size, &look, canvas);
+        render_cell(&c, cell_loc, size, &look_cell, canvas);
     }
 }
 
@@ -414,19 +404,10 @@ fn render_cell(
 ) {
     match &rec.label_grid {
         LabelOrImgGrid::Html(html) => {
-            render_html(
-                html,
-                Orientation::LeftToRight,
-                loc,
-                size,
-                look,
-                canvas,
-            );
+            render_html(html, loc, size, look, canvas);
         }
         LabelOrImgGrid::Img(img) => {
             // TODO: Need to introduce setting to control file access as specificed by ofifical graphviz source
-            let mut look = look.clone();
-            look.fill_color = Option::None;
             let image_size = img.size();
             let image_size = match &img.scale {
                 Scale::False => Point::new(image_size.x, image_size.y),
@@ -574,7 +555,6 @@ impl Renderable for Element {
             }
             ShapeKind::Html(rec) => render_html(
                 rec,
-                self.orientation,
                 self.pos.center(),
                 self.pos.size(false),
                 &self.look,
