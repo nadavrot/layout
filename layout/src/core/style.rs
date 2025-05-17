@@ -55,7 +55,7 @@ pub enum LineStyleKind {
 
 #[derive(Debug, Copy, Clone)]
 pub(crate) enum FontStyle {
-    Normal,
+    None,
     Italic,
 }
 
@@ -125,7 +125,7 @@ impl StyleAttr {
             rounded,
             font_size,
             fontname,
-            font_style: FontStyle::Normal,
+            font_style: FontStyle::None,
             font_weight: FontWeight::None,
             text_decoration: TextDecoration::new(),
             baseline_shift: BaselineShift::Normal,

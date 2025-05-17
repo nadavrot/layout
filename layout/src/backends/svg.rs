@@ -249,7 +249,7 @@ impl RenderBackend for SVGWriter {
         self.grow_window(xy, Point::new(10., len as f64 * 10.));
         let font_style_text = match look.font_style {
             crate::core::style::FontStyle::Italic => "font-style=\"italic\"",
-            crate::core::style::FontStyle::Normal => "",
+            crate::core::style::FontStyle::None => "",
         };
         let font_weight_text = match look.font_weight {
             crate::core::style::FontWeight::Bold => "font-weight=\"bold\"",

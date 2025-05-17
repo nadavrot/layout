@@ -1394,7 +1394,11 @@ impl PlainText {
             style_attr.fontname = face.clone();
         }
 
-        style_attr.font_style = self.text_style.font_style.clone();
+        // style_attr.font_style = self.text_style.font_style.clone();
+        match self.text_style.font_style {
+            FontStyle::Italic => style_attr.font_style = FontStyle::Italic,
+            FontStyle::None => {}
+        }
         match self.text_style.font_weight {
             FontWeight::Bold => style_attr.font_weight = FontWeight::Bold,
             FontWeight::None => {}
@@ -1419,7 +1423,7 @@ impl HtmlGrid {
                 let mut text_grid = TextGrid::new();
                 let text_style = TextStyle {
                     font: Font::new(),
-                    font_style: FontStyle::Normal,
+                    font_style: FontStyle::None,
                     font_weight: FontWeight::None,
                     text_decoration: TextDecoration::new(),
                     baseline_shift: BaselineShift::Normal,
