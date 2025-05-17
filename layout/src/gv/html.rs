@@ -1350,7 +1350,7 @@ impl TextGrid {
         }
         width
     }
-    fn height(&self, font_size: usize) -> f64 {
+    pub(crate) fn height(&self, font_size: usize) -> f64 {
         let mut height = 0.0;
         for line in self.text_items.iter() {
             // TODO: we are going with the last with the assumption that heigh is the same for every plaintext,
@@ -1370,6 +1370,21 @@ impl TextGrid {
         }
         height
     }
+}
+
+pub(crate) fn get_line_height(line: &Vec<PlainText>, font_size: usize) -> f64 {
+    let mut line_height = 0.0;
+    for item in line.iter() {
+        let font_size = match item.text_style.font.point_size {
+            Some(size) => size as usize,
+            None => font_size,
+        };
+        let text_size = get_size_for_str(&item.text, font_size);
+        if line_height < text_size.y {
+            line_height = text_size.y;
+        }
+    }
+    line_height
 }
 
 impl PlainText {

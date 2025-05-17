@@ -5,7 +5,8 @@ use crate::core::format::{ClipHandle, RenderBackend, Renderable, Visible};
 use crate::core::geometry::*;
 use crate::core::style::{Align, LineStyleKind, StyleAttr, VAlign};
 use crate::gv::html::{
-    DotCellGrid, HtmlGrid, LabelOrImgGrid, Scale, TableGrid, TextGrid,
+    get_line_height, DotCellGrid, HtmlGrid, LabelOrImgGrid, Scale, TableGrid,
+    TextGrid,
 };
 use crate::std_shapes::shapes::*;
 
@@ -320,6 +321,8 @@ fn render_text(
     let loc0_x = loc.x;
     let mut loc = loc;
 
+    loc.y -= rec.height(look.font_size) / 2.;
+
     for line in &rec.text_items {
         let mut line_width = 0.;
         for t in line {
@@ -335,7 +338,7 @@ fn render_text(
             canvas.draw_text(loc2, t.text.as_str(), &look);
             loc.x += text_size.x / 2.;
         }
-        loc.y += look.font_size as f64;
+        loc.y += get_line_height(line, look.font_size);
         loc.x = loc0_x;
     }
 }
