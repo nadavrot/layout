@@ -1394,7 +1394,6 @@ impl PlainText {
             style_attr.fontname = face.clone();
         }
 
-        // style_attr.font_style = self.text_style.font_style.clone();
         match self.text_style.font_style {
             FontStyle::Italic => style_attr.font_style = FontStyle::Italic,
             FontStyle::None => {}
