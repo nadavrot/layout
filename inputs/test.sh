@@ -7,7 +7,7 @@ ALL=
 for file in ./inputs/*.dot; do
   NAME=/tmp/out_$RANDOM.svg
   ALL="$NAME $ALL"
-  cargo run --bin run $file -o $NAME $1 $2 $3
+  cargo run --bin layout $file -o $NAME $1 $2 $3
   NAME=/tmp/out_$RANDOM.svg
   ALL="$NAME $ALL"
   dot -Tsvg $file -o $NAME
