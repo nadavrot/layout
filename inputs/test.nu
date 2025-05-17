@@ -31,5 +31,3 @@ def --env main [
         }
     }
 }
-
-main 
