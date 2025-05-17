@@ -7,7 +7,7 @@ use crate::core::style::{
     Align, FontStyle, FontWeight, LineStyleKind, StyleAttr, VAlign,
 };
 use crate::gv::html::{
-    DotCellGrid, HtmlGrid, LabelOrImgGrid, TableGrid, TableTag, TextGrid,
+    DotCellGrid, HtmlGrid, LabelOrImgGrid, Scale, TableGrid, TableTag, TextGrid,
 };
 use crate::std_shapes::shapes::*;
 
@@ -462,7 +462,45 @@ fn render_cell(
                 canvas,
             );
         }
-        LabelOrImgGrid::Img(_, _) => {}
+        LabelOrImgGrid::Img(img) => {
+            let mut look = look.clone();
+            look.fill_color = Option::None;
+            let image_size =
+                crate::core::utils::read_png_size(&img.source).unwrap();
+            let image_size = match &img.scale {
+                Scale::False => {
+                    Point::new(image_size.0 as f64, image_size.1 as f64)
+                }
+                Scale::True => {
+                    let x_scale = size.x / image_size.0 as f64;
+                    let y_scale = size.y / image_size.1 as f64;
+                    let scale =
+                        if x_scale < y_scale { x_scale } else { y_scale };
+                    Point::new(
+                        image_size.0 as f64 * scale,
+                        image_size.1 as f64 * scale,
+                    )
+                }
+                Scale::Width => {
+                    let scale = size.x / image_size.0 as f64;
+                    Point::new(image_size.0 as f64 * scale, image_size.1 as f64)
+                }
+                Scale::Height => {
+                    let scale = size.y / image_size.1 as f64;
+                    Point::new(image_size.0 as f64, image_size.1 as f64 * scale)
+                }
+                Scale::Both => size.clone(),
+            };
+            canvas.draw_image(
+                Point::new(
+                    loc.x - image_size.x / 2.,
+                    loc.y - image_size.y / 2.,
+                ),
+                image_size,
+                &img.source,
+                None,
+            );
+        }
     }
 }
 

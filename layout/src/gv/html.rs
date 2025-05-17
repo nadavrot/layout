@@ -77,6 +77,46 @@ impl TagType {
 }
 
 #[derive(Debug, Clone)]
+pub(crate) struct Image {
+    pub(crate) scale: Scale,
+    pub(crate) source: String,
+}
+
+impl Image {
+    fn from_tag_attr_list(
+        tag_attr_list: Vec<(String, String)>,
+    ) -> Result<Self, String> {
+        let mut scale = Scale::False;
+        let mut source = String::new();
+        for (key, value) in tag_attr_list.iter() {
+            match key.as_str() {
+                "scale" => {
+                    scale = match value.as_str() {
+                        "true" => Scale::True,
+                        "width" => Scale::Width,
+                        "height" => Scale::Height,
+                        "both" => Scale::Both,
+                        _ => Scale::False,
+                    }
+                }
+                "src" => source = value.clone(),
+                _ => {}
+            }
+        }
+        Ok(Self { scale, source })
+    }
+
+    fn width(&self) -> f64 {
+        let size = crate::core::utils::read_png_size(&self.source).unwrap();
+        size.0 as f64
+    }
+    fn height(&self) -> f64 {
+        let size = crate::core::utils::read_png_size(&self.source).unwrap();
+        size.1 as f64
+    }
+}
+
+#[derive(Debug, Clone)]
 pub(crate) enum Scale {
     False,
     True,
@@ -197,7 +237,7 @@ impl TableTag {
 #[derive(Debug, Clone)]
 enum LabelOrImg {
     Html(Html),
-    Img(Scale, String),
+    Img(Image),
 }
 #[derive(Debug, Clone)]
 struct DotCell {
@@ -227,9 +267,7 @@ impl DotCellGrid {
             LabelOrImg::Html(html) => {
                 LabelOrImgGrid::Html(HtmlGrid::from_html(html))
             }
-            LabelOrImg::Img(scale, img) => {
-                LabelOrImgGrid::Img(scale.clone(), img.clone())
-            }
+            LabelOrImg::Img(image) => LabelOrImgGrid::Img(image.clone()),
         };
         Self {
             i,
@@ -245,7 +283,7 @@ impl DotCellGrid {
 #[derive(Debug, Clone)]
 pub(crate) enum LabelOrImgGrid {
     Html(HtmlGrid),
-    Img(Scale, String),
+    Img(Image),
 }
 
 #[derive(Debug, Clone)]
@@ -615,7 +653,7 @@ pub(crate) struct PlainTextGrid {
     pub(crate) text_style: TextStyle,
 }
 #[derive(Debug, Clone)]
-pub(crate) struct TextGrid {
+pub struct TextGrid {
     // each line is a vector of PlainTextGrid
     // as a whole it represent multiline text
     pub(crate) text_items: Vec<Vec<PlainTextGrid>>,
@@ -711,7 +749,7 @@ impl TextGrid {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) enum HtmlGrid {
+pub enum HtmlGrid {
     Text(TextGrid),
     FontTable(TableGrid),
 }
@@ -1203,7 +1241,21 @@ impl HtmlParser {
                 format!("Expected <td>, found {:?}", tag_type).as_str(),
             );
         }
-        let label = LabelOrImg::Html(self.parse_html_label()?);
+        let label = match self.tok.clone() {
+            Token::OpeningTag(TagType::Img) => {
+                self.mode = HtmlMode::HtmlTag;
+                let (tag_type, attr_list) = self.parse_tag_start(false)?;
+                if tag_type != TagType::Img {
+                    return to_error(
+                        format!("Expected <img>, found {:?}", tag_type)
+                            .as_str(),
+                    );
+                }
+                let img = Image::from_tag_attr_list(attr_list)?;
+                LabelOrImg::Img(img)
+            }
+            _ => LabelOrImg::Html(self.parse_html_label()?),
+        };
         self.parse_tag_end(&TagType::Td, true)?;
         Ok(DotCell {
             label,
@@ -1423,7 +1475,7 @@ impl TableGridInner {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct TableGrid {
+pub struct TableGrid {
     pub(crate) cells: Vec<(TdAttr, DotCellGrid)>,
     pub(crate) grid: Vec<Option<usize>>,
     pub(crate) width_arr: Vec<f64>, // width in svg units
@@ -1586,7 +1638,7 @@ impl TableGrid {
                             HtmlGrid::Text(text) => text.width(font_size),
                             HtmlGrid::FontTable(x) => x.width(),
                         },
-                        _ => 0.0,
+                        LabelOrImgGrid::Img(img) => img.width(),
                     };
                     let cellpadding = self.cellpadding(cell);
                     let cellborder = self.cellborder(cell);
@@ -1609,7 +1661,7 @@ impl TableGrid {
                             HtmlGrid::Text(text) => text.height(font_size),
                             HtmlGrid::FontTable(x) => x.height(),
                         },
-                        _ => 0.0,
+                        LabelOrImgGrid::Img(img) => img.height(),
                     };
                     let cellpadding = self.cellpadding(cell);
                     let cellborder = self.cellborder(cell);

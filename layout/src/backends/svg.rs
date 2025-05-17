@@ -378,6 +378,25 @@ impl RenderBackend for SVGWriter {
         self.counter += 1;
     }
 
+    fn draw_image(
+        &mut self,
+        xy: Point,
+        size: Point,
+        file_path: &str,
+        properties: Option<String>,
+    ) {
+        self.grow_window(xy, size);
+        let props = properties.unwrap_or_default();
+        let line1 = format!(
+            "<g {props}>\n
+             <image x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" \
+             href=\"{}\" />\n
+             </g>\n",
+            xy.x, xy.y, size.x, size.y, file_path
+        );
+        self.content.push_str(&line1);
+    }
+
     fn draw_line(
         &mut self,
         start: Point,
