@@ -18,12 +18,14 @@ pub enum Token {
     ArrowLine,
     OpenBracket,
     CloseBracket,
+    HtmlStart,
+    HtmlEnd,
     OpenBrace,
     CloseBrace,
     Error(usize),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Lexer {
     input: Vec<char>,
     pub pos: usize,
@@ -184,6 +186,29 @@ impl Lexer {
         Token::Identifier(result)
     }
 
+    pub fn next_token_html(&mut self) -> Token {
+        let mut result = String::new();
+        let mut bracket_balance = 1;
+        loop {
+            // Handle escaping
+            if self.ch == '\0' {
+                // Reached EOF without completing the string
+                return Token::Error(self.pos);
+            }
+            if self.ch == '<' {
+                bracket_balance += 1;
+            } else if self.ch == '>' {
+                if bracket_balance == 1 {
+                    break;
+                }
+                bracket_balance -= 1;
+            }
+            result.push(self.ch);
+            self.read_char();
+        }
+        Token::Identifier(result)
+    }
+
     pub fn next_token(&mut self) -> Token {
         let tok: Token;
         while self.skip_comment() || self.skip_whitespace() {}
@@ -214,6 +239,12 @@ impl Lexer {
             }
             '"' => {
                 tok = self.read_string();
+            }
+            '<' => {
+                tok = Token::HtmlStart;
+            }
+            '>' => {
+                tok = Token::HtmlEnd;
             }
             '-' => {
                 self.read_char();

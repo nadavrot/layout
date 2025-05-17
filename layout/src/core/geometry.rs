@@ -280,11 +280,32 @@ pub fn pad_shape_scalar(size: Point, s: f64) -> Point {
     Point::new(size.x + s, size.y + s)
 }
 
+fn char_width(c: char) -> f64 {
+    match c {
+        'a' | 'b' | 'c' | 'd' | 'e' | 'g' | 'h' | 'j' | 'k' | 'n' | 'o'
+        | 'v' | 'f' | 'r' | 'q' | 'x' | 'y' | 'z' | '2' | '3' | '4' | '5'
+        | '6' | '7' | '8' | '9' => 0.5,
+        't' | 'i' | 'l' | '|' | '!' | '1' => 0.2,
+        'm' | 'w' => 0.8,
+        _ => 1.0,
+    }
+}
+
+#[inline]
+fn get_width_of_line(label: &str) -> usize {
+    let mut width = 0f64;
+    for c in label.chars() {
+        width += char_width(c);
+    }
+    // round above
+    width.ceil() as usize
+}
+
 /// Estimate the bounding box of some rendered text.
 pub fn get_size_for_str(label: &str, font_size: usize) -> Point {
     // Find the longest line.
     let max_line_len = if !label.is_empty() {
-        label.lines().map(|x| x.chars().count()).max().unwrap()
+        label.lines().map(|x| get_width_of_line(x)).max().unwrap()
     } else {
         0
     };

@@ -1,0 +1,24 @@
+digraph structs {
+    node [shape=plaintext]
+    struct1 [     label=<
+<tABLE BORDER="16" BGCOLOr="bisque" CELLPADDING="2" ROWS="*adfasdfadsf" vALIGN="Top" >
+  <TR>
+      <TD CELLPADDING="1" CELLSPACING="12" COlSPAN="3">elephant</TD> 
+      <TD BORDER="1" CELLSPACING="12" ROWSPAN="2" BgCOLOR="chaRtreuse" 
+          vALIGN="Top" ALIGN="right">two</TD>
+  </TR>
+  <TR>
+    <TD CELLSPACING="12" COLSPAN="2" ROWSPAN="2">
+      <TABLE BGCOLOR="grey">
+        <Tr><TD>corn</TD></Tr> 
+        <TR><TD BGCOLOR="Yellow">c</TD></TR> 
+        <TR><TD>f</TD></TR> 
+      </TABLE>
+    </TD>
+    <TD BGCOLOR="white">penguin</TD> 
+  </TR> 
+  <TR>
+    <TD COLSPAN="2" BORDER="4" ALIGN="right" PORT="there">4</TD>
+  </TR>
+</tABLE>>];
+}

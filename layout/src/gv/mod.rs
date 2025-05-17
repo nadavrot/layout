@@ -2,6 +2,7 @@
 //! file format (parsing, building a compatible graph, etc.)
 
 pub mod builder;
+pub(crate) mod html;
 pub mod parser;
 pub mod record;
 
