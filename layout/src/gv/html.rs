@@ -1,16 +1,45 @@
 use crate::core::geometry::{get_size_for_str, Point};
 use std::collections::HashMap;
 
+use crate::core::color::Color;
 use crate::core::style::{
     Align, BAlign, BaselineShift, FontStyle, FontWeight, StyleAttr,
     TextDecoration, VAlign,
 };
+use crate::core::utils::get_png_size;
 
-use crate::core::color::Color;
+pub(crate) fn parse_html_string(input: &str) -> Result<HtmlGrid, String> {
+    let mut parser = HtmlParser {
+        input: input.chars().collect(),
+        pos: 0,
+        tok: Token::Colon,
+        mode: HtmlMode::Html,
+        ch: '\0',
+    };
+    parser.read_char();
+    parser.lex();
+    let x = parser.parse_html_label()?;
+    Ok(HtmlGrid::from_html(&x))
+}
 
 /// Creates an error from the string \p str.
 fn to_error<T>(str: &str) -> Result<T, String> {
     Result::Err(str.to_string())
+}
+
+#[derive(Debug, Clone)]
+struct HtmlParser {
+    input: Vec<char>,
+    pos: usize,
+    tok: Token,
+    mode: HtmlMode,
+    pub ch: char,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+enum HtmlMode {
+    Html,
+    HtmlTag,
 }
 
 #[derive(Debug, Clone)]
@@ -77,94 +106,80 @@ impl TagType {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct Image {
-    pub(crate) scale: Scale,
-    pub(crate) source: String,
+enum Html {
+    Text(Text),
+    FontTable(FontTable),
 }
 
-impl Image {
-    fn from_tag_attr_list(
-        tag_attr_list: Vec<(String, String)>,
+type Text = Vec<TextItem>;
+
+#[derive(Debug, Clone)]
+struct FontTable {
+    rows: Vec<(Row, Option<Hr>)>,
+    tag: TableTag,
+    table_attr: TableAttr,
+}
+
+impl FontTable {
+    fn try_new(
+        rows: Vec<(Row, Option<Hr>)>,
+        tag: TableTag,
+        table_attr: TableAttr,
     ) -> Result<Self, String> {
-        let mut scale = Scale::False;
-        let mut source = String::new();
-        for (key, value) in tag_attr_list.iter() {
-            match key.as_str() {
-                "scale" => {
-                    scale = match value.as_str() {
-                        "true" => Scale::True,
-                        "width" => Scale::Width,
-                        "height" => Scale::Height,
-                        "both" => Scale::Both,
-                        _ => Scale::False,
-                    }
-                }
-                "src" => source = value.clone(),
-                _ => {}
+        if let Some(last_row) = rows.last() {
+            if last_row.1.is_some() {
+                return to_error("Table cannot end with a <hr> tag");
             }
+        } else {
+            return to_error("Table cannot be empty");
         }
-        Ok(Self { scale, source })
-    }
-
-    fn width(&self) -> f64 {
-        let size = crate::core::utils::read_png_size(&self.source).unwrap();
-        size.0 as f64
-    }
-    fn height(&self) -> f64 {
-        let size = crate::core::utils::read_png_size(&self.source).unwrap();
-        size.1 as f64
+        Ok(Self {
+            rows,
+            tag,
+            table_attr,
+        })
     }
 }
 
 #[derive(Debug, Clone)]
-pub(crate) enum Scale {
-    False,
-    True,
-    Width,
-    Height,
-    Both,
+pub(crate) enum TableTag {
+    None,
+    Font(Font),
+    I,
+    B,
+    U,
+    O,
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct Font {
-    pub(crate) color: Option<Color>,
-    pub(crate) face: Option<String>,
-    pub(crate) point_size: Option<f64>,
+struct Row {
+    cells: Vec<(DotCell, Option<Vr>)>,
 }
 
-impl Font {
-    fn new() -> Self {
-        Self {
-            color: None,
-            face: None,
-            point_size: None,
-        }
-    }
-
-    fn set_attr(&mut self, attr: &str, value: &str) {
-        match attr {
-            "color" => {
-                self.color = {
-                    if let Some(color) = Color::from_name(value) {
-                        Some(color)
-                    } else {
-                        None
-                    }
-                }
+impl Row {
+    fn try_new(cells: Vec<(DotCell, Option<Vr>)>) -> Result<Self, String> {
+        if let Some(last_cell) = cells.last() {
+            if last_cell.1.is_some() {
+                return to_error("Row cannot end with a <vr> tag");
             }
-            "face" => self.face = Some(value.to_string()),
-            "point-size" => self.point_size = value.parse().ok(),
-            _ => {}
+        } else {
+            return to_error("Row cannot be empty");
         }
+        Ok(Self { cells })
     }
+}
 
-    fn from_tag_attr_list(list: Vec<(String, String)>) -> Self {
-        let mut font = Self::new();
-        for (key, value) in list.iter() {
-            font.set_attr(key, value);
-        }
-        font
-    }
+#[derive(Debug, Clone)]
+enum TextItem {
+    TaggedText(TaggedText),
+    Br(Align),
+    PlainText(String),
+}
+
+#[derive(Debug, Clone)]
+struct TaggedText {
+    text_items: Text,
+    tag: TextTag,
 }
 
 #[derive(Debug, Clone)]
@@ -179,66 +194,13 @@ enum TextTag {
     S,
 }
 
-impl TextTag {
-    fn new(tag: &TagType, tag_attr_list: Vec<(String, String)>) -> Self {
-        match tag {
-            TagType::Font => {
-                let font = Font::from_tag_attr_list(tag_attr_list);
-                TextTag::Font(font)
-            }
-            TagType::I => TextTag::I,
-            TagType::B => TextTag::B,
-            TagType::U => TextTag::U,
-            TagType::O => TextTag::O,
-            TagType::Sub => TextTag::Sub,
-            TagType::Sup => TextTag::Sup,
-            TagType::S => TextTag::S,
-            _ => panic!("Invalid tag for text: {:?}", tag),
-        }
-    }
+#[derive(Debug, Clone)]
+pub(crate) struct Font {
+    pub(crate) color: Option<Color>,
+    pub(crate) face: Option<String>,
+    pub(crate) point_size: Option<f64>,
 }
 
-type Text = Vec<TextItem>;
-
-#[derive(Debug, Clone)]
-struct TaggedText {
-    text_items: Text,
-    tag: TextTag,
-}
-
-#[derive(Debug, Clone)]
-pub(crate) enum TableTag {
-    None,
-    Font(Font),
-    I,
-    B,
-    U,
-    O,
-}
-impl TableTag {
-    fn from_tag(tag_pair: Option<(TagType, Vec<(String, String)>)>) -> Self {
-        if let Some(tag_inner) = tag_pair {
-            match tag_inner.0 {
-                TagType::Table => TableTag::None,
-                TagType::Font => TableTag::Font(Font::from_tag_attr_list(
-                    tag_inner.1.clone(),
-                )),
-                TagType::I => TableTag::I,
-                TagType::B => TableTag::B,
-                TagType::U => TableTag::U,
-                TagType::O => TableTag::O,
-                _ => panic!("Invalid tag for table: {:?}", tag_inner.0),
-            }
-        } else {
-            TableTag::None
-        }
-    }
-}
-#[derive(Debug, Clone)]
-enum LabelOrImg {
-    Html(Html),
-    Img(Image),
-}
 #[derive(Debug, Clone)]
 struct DotCell {
     label: LabelOrImg,
@@ -246,43 +208,8 @@ struct DotCell {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct DotCellGrid {
-    pub(crate) i: usize,
-    pub(crate) j: usize,
-    pub(crate) width_in_cell: usize,
-    pub(crate) height_in_cell: usize,
-    pub(crate) label_grid: LabelOrImgGrid,
-    td_attr: TdAttr,
-}
-
-impl DotCellGrid {
-    fn from_dot_cell(
-        i: usize,
-        j: usize,
-        width_in_cell: usize,
-        height_in_cell: usize,
-        dot_cell: &DotCell,
-    ) -> Self {
-        let label_grid = match &dot_cell.label {
-            LabelOrImg::Html(html) => {
-                LabelOrImgGrid::Html(HtmlGrid::from_html(html))
-            }
-            LabelOrImg::Img(image) => LabelOrImgGrid::Img(image.clone()),
-        };
-        Self {
-            i,
-            j,
-            width_in_cell,
-            height_in_cell,
-            label_grid,
-            td_attr: dot_cell.td_attr.clone(),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub(crate) enum LabelOrImgGrid {
-    Html(HtmlGrid),
+enum LabelOrImg {
+    Html(Html),
     Img(Image),
 }
 
@@ -324,158 +251,17 @@ pub(crate) struct TdAttr {
     tooltip: Option<String>,         // value
 }
 
-impl TdAttr {
-    fn new() -> Self {
-        Self {
-            align: Align::Center,
-            balign: BAlign::Center,
-            bgcolor: None,
-            border: None,
-            cellpadding: None,
-            cellspacing: None,
-            color: None,
-            colspan: 1,
-            fixedsize: false,
-            gradientangle: None,
-            height: None,
-            href: None,
-            id: None,
-            port: None,
-            rowspan: 1,
-            sides: Sides::from_str(""),
-            style: None,
-            target: None,
-            title: None,
-            tooltip: None,
-            valign: VAlign::Middle,
-            width: None,
-        }
-    }
-
-    fn from_tag_attr_list(list: Vec<(String, String)>) -> Self {
-        let mut attr = Self::new();
-        for (key, value) in list.iter() {
-            attr.set_attr(key, value);
-        }
-        attr
-    }
-
-    fn set_attr(&mut self, attr: &str, value: &str) {
-        match attr {
-            "align" => {
-                self.align = match value {
-                    "left" => Align::Left,
-                    "right" => Align::Right,
-                    _ => Align::Center,
-                }
-            }
-            "balign" => {
-                self.balign = match value {
-                    "left" => BAlign::Left,
-                    "right" => BAlign::Right,
-                    _ => BAlign::Center,
-                }
-            }
-            "bgcolor" => self.bgcolor = Some(value.to_string()),
-            "border" => self.border = value.parse().ok(),
-            "cellpadding" => self.cellpadding = value.parse().ok(),
-            "cellspacing" => self.cellspacing = value.parse().ok(),
-            "color" => self.color = Some(value.to_string()),
-            "colspan" => self.colspan = value.parse().unwrap_or(1),
-            "fixedsize" => self.fixedsize = value == "true",
-            "gradientangle" => self.gradientangle = Some(value.to_string()),
-            "height" => self.height = value.parse().ok(),
-            "href" => self.href = Some(value.to_string()),
-            "id" => self.id = Some(value.to_string()),
-            "port" => self.port = Some(value.to_string()),
-            "rowspan" => self.rowspan = value.parse().unwrap_or(1),
-            "sides" => self.sides = Sides::from_str(value),
-            "style" => self.style = Some(value.to_string()),
-            "target" => self.target = Some(value.to_string()),
-            "title" => self.title = Some(value.to_string()),
-            "tooltip" => self.tooltip = Some(value.to_string()),
-            "valign" => {
-                self.valign = match value {
-                    "top" => VAlign::Top,
-                    "bottom" => VAlign::Bottom,
-                    _ => VAlign::Middle,
-                }
-            }
-            "width" => self.width = value.parse().ok(),
-            _ => {}
-        }
-    }
-
-    pub(crate) fn update_style_attr(&self, style_attr: &mut StyleAttr) {
-        if let Some(ref color) = self.bgcolor {
-            style_attr.fill_color = Color::from_name(color);
-        }
-        style_attr.valign = self.valign.clone();
-        style_attr.align = self.align.clone();
-        style_attr.balign = self.balign.clone();
-    }
+#[derive(Debug, Clone)]
+pub(crate) struct Image {
+    pub(crate) scale: Scale,
+    pub(crate) source: String,
 }
 
 #[derive(Debug, Clone)]
-enum ColumnFormat {
-    Star,
-    None,
-}
-
-impl ColumnFormat {
-    fn from_str(s: &str) -> Self {
-        if s.starts_with('*') {
-            Self::Star
-        } else {
-            Self::None
-        }
-    }
-}
+struct Vr {}
 
 #[derive(Debug, Clone)]
-enum RowFormat {
-    Star,
-    None,
-}
-
-impl RowFormat {
-    fn from_str(s: &str) -> Self {
-        if s.starts_with('*') {
-            Self::Star
-        } else {
-            Self::None
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-struct Sides {
-    left: bool,
-    right: bool,
-    top: bool,
-    bottom: bool,
-}
-
-impl Sides {
-    fn from_str(s: &str) -> Self {
-        let mut sides = Sides {
-            left: false,
-            right: false,
-            top: false,
-            bottom: false,
-        };
-        for c in s.chars() {
-            match c {
-                'L' => sides.left = true,
-                'R' => sides.right = true,
-                'T' => sides.top = true,
-                'B' => sides.bottom = true,
-                _ => {}
-            }
-        }
-        sides
-    }
-}
+struct Hr {}
 
 #[derive(Debug, Clone)]
 pub(crate) struct TableAttr {
@@ -509,304 +295,33 @@ pub(crate) struct TableAttr {
     tooltip: Option<String>,         // value
 }
 
-impl TableAttr {
-    fn new() -> Self {
-        Self {
-            align: Align::Center,
-            bgcolor: None,
-            border: 1,
-            cellborder: None,
-            cellpadding: 2,
-            cellspacing: 2,
-            color: None,
-            columns: None,
-            fixedsize: false,
-            gradientangle: None,
-            height: None,
-            href: None,
-            id: None,
-            port: None,
-            rows: None,
-            sides: Sides::from_str(""),
-            style: None,
-            target: None,
-            title: None,
-            tooltip: None,
-            valign: VAlign::Middle,
-            width: None,
-        }
-    }
-    fn from_attr_list(list: Vec<(String, String)>) -> Self {
-        let mut attr = Self::new();
-        for (key, value) in list.iter() {
-            attr.set_attr(key, value);
-        }
-        attr
-    }
-
-    fn set_attr(&mut self, attr: &str, value: &str) {
-        let attr = attr.to_lowercase();
-        match attr.as_str() {
-            "align" => {
-                self.align = match value {
-                    "left" => Align::Left,
-                    "right" => Align::Right,
-                    _ => Align::Center,
-                }
-            }
-            "bgcolor" => {
-                self.bgcolor = {
-                    if let Some(color) = Color::from_name(value) {
-                        Some(color)
-                    } else {
-                        None
-                    }
-                }
-            }
-            "border" => self.border = value.parse().unwrap_or(0),
-            "cellborder" => self.cellborder = value.parse().ok(),
-            "cellpadding" => self.cellpadding = value.parse().unwrap_or(0),
-            "cellspacing" => self.cellspacing = value.parse().unwrap_or(0),
-            "color" => {
-                self.color = {
-                    if let Some(color) = Color::from_name(value) {
-                        Some(color)
-                    } else {
-                        None
-                    }
-                }
-            }
-            "fixedsize" => self.fixedsize = value == "true",
-            "gradientangle" => self.gradientangle = Some(value.to_string()),
-            "height" => self.height = value.parse().ok(),
-            "width" => self.width = value.parse().ok(),
-            "href" => self.href = Some(value.to_string()),
-            "id" => self.id = Some(value.to_string()),
-            "port" => self.port = Some(value.to_string()),
-            "rows" => self.rows = Some(RowFormat::from_str(value)),
-            "sides" => self.sides = Sides::from_str(value),
-            "style" => self.style = Some(value.to_string()),
-            "target" => self.target = Some(value.to_string()),
-            "title" => self.title = Some(value.to_string()),
-            "tooltip" => self.tooltip = Some(value.to_string()),
-            "valign" => {
-                self.valign = match value {
-                    "top" => VAlign::Top,
-                    "bottom" => VAlign::Bottom,
-                    _ => VAlign::Middle,
-                }
-            }
-            "columns" => self.columns = Some(ColumnFormat::from_str(value)),
-            _ => {}
-        }
-    }
-    pub(crate) fn update_style_attr(&self, style_attr: &mut StyleAttr) {
-        if let Some(ref color) = self.bgcolor {
-            style_attr.fill_color = Some(color.clone());
-        }
-        style_attr.valign = self.valign.clone();
-        style_attr.align = self.align.clone();
-    }
-}
 #[derive(Debug, Clone)]
-struct FontTable {
-    rows: Vec<(Row, Option<Hr>)>,
-    tag: TableTag,
-    table_attr: TableAttr,
-}
-#[derive(Debug, Clone)]
-struct Vr {}
-
-#[derive(Debug, Clone)]
-struct Hr {}
-
-#[derive(Debug, Clone)]
-struct Row {
-    cells: Vec<(DotCell, Option<Vr>)>,
+struct Sides {
+    left: bool,
+    right: bool,
+    top: bool,
+    bottom: bool,
 }
 
 #[derive(Debug, Clone)]
-enum TextItem {
-    TaggedText(TaggedText),
-    Br(Align),
-    PlainText(String),
+enum RowFormat {
+    Star,
+    None,
 }
 
 #[derive(Debug, Clone)]
-enum Html {
-    Text(Text),
-    FontTable(FontTable),
+enum ColumnFormat {
+    Star,
+    None,
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct TextStyle {
-    pub(crate) font: Font,
-    pub(crate) font_style: FontStyle,
-    pub(crate) font_weight: FontWeight,
-    pub(crate) text_decoration: TextDecoration,
-    pub(crate) baseline_shift: BaselineShift,
-}
-
-#[derive(Debug, Clone)]
-pub(crate) struct PlainTextGrid {
-    pub(crate) text: String,
-    pub(crate) text_style: TextStyle,
-}
-#[derive(Debug, Clone)]
-pub struct TextGrid {
-    // each line is a vector of PlainTextGrid
-    // as a whole it represent multiline text
-    pub(crate) text_items: Vec<Vec<PlainTextGrid>>,
-    pub(crate) br: Vec<Align>,
-}
-
-impl TextGrid {
-    fn new() -> Self {
-        Self {
-            text_items: vec![],
-            br: vec![],
-        }
-    }
-    fn collect_from_text(&mut self, text: &Text, text_style: &TextStyle) {
-        for item in text.iter() {
-            match item {
-                TextItem::TaggedText(tagged_text) => {
-                    let mut text_style = text_style.clone();
-                    match &tagged_text.tag {
-                        TextTag::Font(font) => {
-                            text_style.font = font.clone();
-                        }
-                        TextTag::I => text_style.font_style = FontStyle::Italic,
-                        TextTag::B => text_style.font_weight = FontWeight::Bold,
-                        TextTag::U => {
-                            text_style.text_decoration.underline = true
-                        }
-                        TextTag::O => {
-                            text_style.text_decoration.overline = true
-                        }
-                        TextTag::Sub => {
-                            text_style.baseline_shift = BaselineShift::Sub
-                        }
-                        TextTag::Sup => {
-                            text_style.baseline_shift = BaselineShift::Super
-                        }
-                        TextTag::S => {
-                            text_style.text_decoration.line_through = true
-                        }
-                    }
-                    self.collect_from_text(
-                        &tagged_text.text_items,
-                        &text_style,
-                    );
-                }
-                TextItem::Br(align) => {
-                    self.text_items.push(vec![]);
-                    self.br.push(align.clone());
-                }
-                TextItem::PlainText(text) => {
-                    let plain_text = PlainTextGrid {
-                        text: text.clone(),
-                        text_style: text_style.clone(),
-                    };
-                    if let Some(last_line) = self.text_items.last_mut() {
-                        last_line.push(plain_text);
-                    } else {
-                        let mut line = vec![];
-                        line.push(plain_text);
-                        self.text_items.push(line);
-                    }
-                }
-            }
-        }
-    }
-
-    fn width(&self, font_size: usize) -> f64 {
-        let mut width = 0.0;
-        for line in self.text_items.iter() {
-            let mut line_width = 0.0;
-            for item in line.iter() {
-                let text_size = get_size_for_str(&item.text, font_size);
-                line_width += text_size.x;
-            }
-            if width < line_width {
-                width = line_width;
-            }
-        }
-        width
-    }
-    fn height(&self, font_size: usize) -> f64 {
-        let mut height = 0.0;
-        for line in self.text_items.iter() {
-            // TODO: we are going with the last with the assumption that heigh is the same for every plaintext,
-            // which is correct for the current get_size_for_str implementation
-            if let Some(last_line) = line.last() {
-                let text_size = get_size_for_str(&last_line.text, font_size);
-                height += text_size.y;
-            }
-        }
-        height
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum HtmlGrid {
-    Text(TextGrid),
-    FontTable(TableGrid),
-}
-
-impl HtmlGrid {
-    pub(crate) fn size(&self, font_size: usize) -> Point {
-        match self {
-            HtmlGrid::Text(text) => {
-                Point::new(text.width(font_size), text.height(font_size))
-            }
-            HtmlGrid::FontTable(table_grid) => table_grid.size(font_size),
-        }
-    }
-    fn from_html(html: &Html) -> Self {
-        match html {
-            // Html::Text(text) => HtmlGrid::Text(text.clone()),
-            Html::Text(text) => {
-                let mut text_grid = TextGrid::new();
-                let text_style = TextStyle {
-                    font: Font::new(),
-                    font_style: FontStyle::Normal,
-                    font_weight: FontWeight::Normal,
-                    text_decoration: TextDecoration::new(),
-                    baseline_shift: BaselineShift::Normal,
-                };
-                text_grid.collect_from_text(text, &text_style);
-                HtmlGrid::Text(text_grid)
-            }
-            Html::FontTable(table) => {
-                HtmlGrid::FontTable(TableGrid::from_table(table))
-            }
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-enum HtmlMode {
-    Html,
-    HtmlTag,
-}
-
-fn is_text_table_wrapper_invalid(text: &str) -> bool {
-    for line in text.lines() {
-        if !line.is_empty() {
-            return true;
-        }
-    }
-    false
-}
-
-#[derive(Debug, Clone)]
-struct HtmlParser {
-    input: Vec<char>,
-    pos: usize,
-    tok: Token,
-    mode: HtmlMode,
-    pub ch: char,
+pub(crate) enum Scale {
+    False,
+    True,
+    Width,
+    Height,
+    Both,
 }
 
 impl HtmlParser {
@@ -1157,11 +672,7 @@ impl HtmlParser {
         }
         let table_attr = TableAttr::from_attr_list(table_attr2);
 
-        Ok(FontTable {
-            rows,
-            tag: TableTag::from_tag(table_tag1),
-            table_attr,
-        })
+        FontTable::try_new(rows, TableTag::from_tag(table_tag1), table_attr)
     }
 
     fn parse_tag_attr_list(
@@ -1206,9 +717,7 @@ impl HtmlParser {
                 format!("Expected <tr>, found {:?}", tag_type).as_str(),
             );
         }
-        // TODO: consume the 1st cell so that it gurannets the grammar property that splitter can appear in better
-        // cells
-        // The same for splitting of row
+
         let mut cells = Vec::new();
         loop {
             if let Token::ClosingTag(_) = self.tok.clone() {
@@ -1231,7 +740,7 @@ impl HtmlParser {
             cells.push((cell, cell_split));
         }
         self.parse_tag_end(&TagType::Tr, true)?;
-        Ok(Row { cells })
+        Row::try_new(cells)
     }
 
     fn parse_cell(&mut self) -> Result<DotCell, String> {
@@ -1341,48 +850,590 @@ impl HtmlParser {
     }
 }
 
-pub(crate) fn parse_html_string(input: &str) -> Result<HtmlGrid, String> {
-    let mut parser = HtmlParser {
-        input: input.chars().collect(),
-        pos: 0,
-        tok: Token::Colon,
-        mode: HtmlMode::Html,
-        ch: '\0',
-    };
-    parser.read_char();
-    parser.lex();
-    let x = parser.parse_html_label()?;
-    Ok(HtmlGrid::from_html(&x))
+impl Image {
+    fn from_tag_attr_list(
+        tag_attr_list: Vec<(String, String)>,
+    ) -> Result<Self, String> {
+        let mut scale = Scale::False;
+        let mut source = String::new();
+        for (key, value) in tag_attr_list.iter() {
+            match key.as_str() {
+                "scale" => {
+                    scale = match value.as_str() {
+                        "true" => Scale::True,
+                        "width" => Scale::Width,
+                        "height" => Scale::Height,
+                        "both" => Scale::Both,
+                        _ => Scale::False,
+                    }
+                }
+                "src" => source = value.clone(),
+                _ => {}
+            }
+        }
+        Ok(Self { scale, source })
+    }
+
+    fn width(&self) -> f64 {
+        let size = get_png_size(&self.source).unwrap();
+        size.0 as f64
+    }
+    fn height(&self) -> f64 {
+        let size = get_png_size(&self.source).unwrap();
+        size.1 as f64
+    }
+
+    pub(crate) fn size(&self) -> Point {
+        let size = get_png_size(&self.source).unwrap();
+        Point::new(size.0 as f64, size.1 as f64)
+    }
+}
+
+impl Font {
+    fn new() -> Self {
+        Self {
+            color: None,
+            face: None,
+            point_size: None,
+        }
+    }
+
+    fn set_attr(&mut self, attr: &str, value: &str) {
+        match attr {
+            "color" => {
+                self.color = {
+                    if let Some(color) = Color::from_name(value) {
+                        Some(color)
+                    } else {
+                        None
+                    }
+                }
+            }
+            "face" => self.face = Some(value.to_string()),
+            "point-size" => self.point_size = value.parse().ok(),
+            _ => {}
+        }
+    }
+
+    fn from_tag_attr_list(list: Vec<(String, String)>) -> Self {
+        let mut font = Self::new();
+        for (key, value) in list.iter() {
+            font.set_attr(key, value);
+        }
+        font
+    }
+}
+
+impl TextTag {
+    fn new(tag: &TagType, tag_attr_list: Vec<(String, String)>) -> Self {
+        match tag {
+            TagType::Font => {
+                let font = Font::from_tag_attr_list(tag_attr_list);
+                TextTag::Font(font)
+            }
+            TagType::I => TextTag::I,
+            TagType::B => TextTag::B,
+            TagType::U => TextTag::U,
+            TagType::O => TextTag::O,
+            TagType::Sub => TextTag::Sub,
+            TagType::Sup => TextTag::Sup,
+            TagType::S => TextTag::S,
+            _ => panic!("Invalid tag for text: {:?}", tag),
+        }
+    }
+}
+
+impl TableTag {
+    fn from_tag(tag_pair: Option<(TagType, Vec<(String, String)>)>) -> Self {
+        if let Some(tag_inner) = tag_pair {
+            match tag_inner.0 {
+                TagType::Table => TableTag::None,
+                TagType::Font => TableTag::Font(Font::from_tag_attr_list(
+                    tag_inner.1.clone(),
+                )),
+                TagType::I => TableTag::I,
+                TagType::B => TableTag::B,
+                TagType::U => TableTag::U,
+                TagType::O => TableTag::O,
+                _ => panic!("Invalid tag for table: {:?}", tag_inner.0),
+            }
+        } else {
+            TableTag::None
+        }
+    }
+}
+
+impl TdAttr {
+    fn new() -> Self {
+        Self {
+            align: Align::Center,
+            balign: BAlign::Center,
+            bgcolor: None,
+            border: None,
+            cellpadding: None,
+            cellspacing: None,
+            color: None,
+            colspan: 1,
+            fixedsize: false,
+            gradientangle: None,
+            height: None,
+            href: None,
+            id: None,
+            port: None,
+            rowspan: 1,
+            sides: Sides::from_str(""),
+            style: None,
+            target: None,
+            title: None,
+            tooltip: None,
+            valign: VAlign::Middle,
+            width: None,
+        }
+    }
+
+    fn from_tag_attr_list(list: Vec<(String, String)>) -> Self {
+        let mut attr = Self::new();
+        for (key, value) in list.iter() {
+            attr.set_attr(key, value);
+        }
+        attr
+    }
+
+    fn set_attr(&mut self, attr: &str, value: &str) {
+        match attr {
+            "align" => {
+                self.align = match value {
+                    "left" => Align::Left,
+                    "right" => Align::Right,
+                    _ => Align::Center,
+                }
+            }
+            "balign" => {
+                self.balign = match value {
+                    "left" => BAlign::Left,
+                    "right" => BAlign::Right,
+                    _ => BAlign::Center,
+                }
+            }
+            "bgcolor" => self.bgcolor = Some(value.to_string()),
+            "border" => self.border = value.parse().ok(),
+            "cellpadding" => self.cellpadding = value.parse().ok(),
+            "cellspacing" => self.cellspacing = value.parse().ok(),
+            "color" => self.color = Some(value.to_string()),
+            "colspan" => self.colspan = value.parse().unwrap_or(1),
+            "fixedsize" => self.fixedsize = value == "true",
+            "gradientangle" => self.gradientangle = Some(value.to_string()),
+            "height" => self.height = value.parse().ok(),
+            "href" => self.href = Some(value.to_string()),
+            "id" => self.id = Some(value.to_string()),
+            "port" => self.port = Some(value.to_string()),
+            "rowspan" => self.rowspan = value.parse().unwrap_or(1),
+            "sides" => self.sides = Sides::from_str(value),
+            "style" => self.style = Some(value.to_string()),
+            "target" => self.target = Some(value.to_string()),
+            "title" => self.title = Some(value.to_string()),
+            "tooltip" => self.tooltip = Some(value.to_string()),
+            "valign" => {
+                self.valign = match value {
+                    "top" => VAlign::Top,
+                    "bottom" => VAlign::Bottom,
+                    _ => VAlign::Middle,
+                }
+            }
+            "width" => self.width = value.parse().ok(),
+            _ => {}
+        }
+    }
+
+    pub(crate) fn update_style_attr(&self, style_attr: &mut StyleAttr) {
+        if let Some(ref color) = self.bgcolor {
+            style_attr.fill_color = Color::from_name(color);
+        }
+        style_attr.valign = self.valign.clone();
+        style_attr.align = self.align.clone();
+        style_attr.balign = self.balign.clone();
+    }
+}
+
+impl ColumnFormat {
+    fn from_str(s: &str) -> Self {
+        if s.starts_with('*') {
+            Self::Star
+        } else {
+            Self::None
+        }
+    }
+}
+
+impl RowFormat {
+    fn from_str(s: &str) -> Self {
+        if s.starts_with('*') {
+            Self::Star
+        } else {
+            Self::None
+        }
+    }
+}
+
+impl Sides {
+    fn from_str(s: &str) -> Self {
+        let mut sides = Self {
+            left: false,
+            right: false,
+            top: false,
+            bottom: false,
+        };
+        for c in s.chars() {
+            match c {
+                'L' => sides.left = true,
+                'R' => sides.right = true,
+                'T' => sides.top = true,
+                'B' => sides.bottom = true,
+                _ => {}
+            }
+        }
+        sides
+    }
+}
+
+impl TableAttr {
+    fn new() -> Self {
+        Self {
+            align: Align::Center,
+            bgcolor: None,
+            border: 1,
+            cellborder: None,
+            cellpadding: 2,
+            cellspacing: 2,
+            color: None,
+            columns: None,
+            fixedsize: false,
+            gradientangle: None,
+            height: None,
+            href: None,
+            id: None,
+            port: None,
+            rows: None,
+            sides: Sides::from_str(""),
+            style: None,
+            target: None,
+            title: None,
+            tooltip: None,
+            valign: VAlign::Middle,
+            width: None,
+        }
+    }
+    fn from_attr_list(list: Vec<(String, String)>) -> Self {
+        let mut attr = Self::new();
+        for (key, value) in list.iter() {
+            attr.set_attr(key, value);
+        }
+        attr
+    }
+
+    fn set_attr(&mut self, attr: &str, value: &str) {
+        let attr = attr.to_lowercase();
+        match attr.as_str() {
+            "align" => {
+                self.align = match value {
+                    "left" => Align::Left,
+                    "right" => Align::Right,
+                    _ => Align::Center,
+                }
+            }
+            "bgcolor" => {
+                self.bgcolor = {
+                    if let Some(color) = Color::from_name(value) {
+                        Some(color)
+                    } else {
+                        None
+                    }
+                }
+            }
+            "border" => self.border = value.parse().unwrap_or(0),
+            "cellborder" => self.cellborder = value.parse().ok(),
+            "cellpadding" => self.cellpadding = value.parse().unwrap_or(0),
+            "cellspacing" => self.cellspacing = value.parse().unwrap_or(0),
+            "color" => {
+                self.color = {
+                    if let Some(color) = Color::from_name(value) {
+                        Some(color)
+                    } else {
+                        None
+                    }
+                }
+            }
+            "fixedsize" => self.fixedsize = value == "true",
+            "gradientangle" => self.gradientangle = Some(value.to_string()),
+            "height" => self.height = value.parse().ok(),
+            "width" => self.width = value.parse().ok(),
+            "href" => self.href = Some(value.to_string()),
+            "id" => self.id = Some(value.to_string()),
+            "port" => self.port = Some(value.to_string()),
+            "rows" => self.rows = Some(RowFormat::from_str(value)),
+            "sides" => self.sides = Sides::from_str(value),
+            "style" => self.style = Some(value.to_string()),
+            "target" => self.target = Some(value.to_string()),
+            "title" => self.title = Some(value.to_string()),
+            "tooltip" => self.tooltip = Some(value.to_string()),
+            "valign" => {
+                self.valign = match value {
+                    "top" => VAlign::Top,
+                    "bottom" => VAlign::Bottom,
+                    _ => VAlign::Middle,
+                }
+            }
+            "columns" => self.columns = Some(ColumnFormat::from_str(value)),
+            _ => {}
+        }
+    }
+    pub(crate) fn update_style_attr(&self, style_attr: &mut StyleAttr) {
+        if let Some(ref color) = self.bgcolor {
+            style_attr.fill_color = Some(color.clone());
+        }
+        style_attr.valign = self.valign.clone();
+        style_attr.align = self.align.clone();
+    }
 }
 
 #[derive(Debug, Clone)]
-struct TableGridInner {
+pub enum HtmlGrid {
+    Text(TextGrid),
+    FontTable(TableGrid),
+}
+
+#[derive(Debug, Clone)]
+pub struct TextGrid {
+    // each line is a vector of PlainTextGrid
+    // as a whole it represent multiline text
+    pub(crate) text_items: Vec<Vec<PlainText>>,
+    br: Vec<Align>,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct PlainText {
+    pub(crate) text: String,
+    pub(crate) text_style: TextStyle,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct TextStyle {
+    pub(crate) font: Font,
+    pub(crate) font_style: FontStyle,
+    pub(crate) font_weight: FontWeight,
+    pub(crate) text_decoration: TextDecoration,
+    pub(crate) baseline_shift: BaselineShift,
+}
+
+#[derive(Debug, Clone)]
+pub struct TableGrid {
+    pub(crate) cells: Vec<(TdAttr, DotCellGrid)>,
+    grid: Vec<Option<usize>>,
+    width_arr: Vec<f64>,   // width in svg units
+    height_arr: Vec<f64>,  // height in svg units
+    width_in_cell: usize,  // width of the table in cells
+    height_in_cell: usize, // height of the table in cells
+    font_size: usize,
+    pub(crate) table_attr: TableAttr,
+    pub(crate) table_tag: TableTag,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct DotCellGrid {
+    i: usize,
+    j: usize,
+    width_in_cell: usize,
+    height_in_cell: usize,
+    pub(crate) label_grid: LabelOrImgGrid,
+    td_attr: TdAttr,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) enum LabelOrImgGrid {
+    Html(HtmlGrid),
+    Img(Image),
+}
+
+impl DotCellGrid {
+    fn from_dot_cell(
+        i: usize,
+        j: usize,
+        width_in_cell: usize,
+        height_in_cell: usize,
+        dot_cell: &DotCell,
+    ) -> Self {
+        let label_grid = match &dot_cell.label {
+            LabelOrImg::Html(html) => {
+                LabelOrImgGrid::Html(HtmlGrid::from_html(html))
+            }
+            LabelOrImg::Img(image) => LabelOrImgGrid::Img(image.clone()),
+        };
+        Self {
+            i,
+            j,
+            width_in_cell,
+            height_in_cell,
+            label_grid,
+            td_attr: dot_cell.td_attr.clone(),
+        }
+    }
+}
+
+impl TextGrid {
+    fn new() -> Self {
+        Self {
+            text_items: vec![],
+            br: vec![],
+        }
+    }
+    fn collect_from_text(&mut self, text: &Text, text_style: &TextStyle) {
+        for item in text.iter() {
+            match item {
+                TextItem::TaggedText(tagged_text) => {
+                    let mut text_style = text_style.clone();
+                    match &tagged_text.tag {
+                        TextTag::Font(font) => {
+                            text_style.font = font.clone();
+                        }
+                        TextTag::I => text_style.font_style = FontStyle::Italic,
+                        TextTag::B => text_style.font_weight = FontWeight::Bold,
+                        TextTag::U => {
+                            text_style.text_decoration.underline = true
+                        }
+                        TextTag::O => {
+                            text_style.text_decoration.overline = true
+                        }
+                        TextTag::Sub => {
+                            text_style.baseline_shift = BaselineShift::Sub
+                        }
+                        TextTag::Sup => {
+                            text_style.baseline_shift = BaselineShift::Super
+                        }
+                        TextTag::S => {
+                            text_style.text_decoration.line_through = true
+                        }
+                    }
+                    self.collect_from_text(
+                        &tagged_text.text_items,
+                        &text_style,
+                    );
+                }
+                TextItem::Br(align) => {
+                    self.text_items.push(vec![]);
+                    self.br.push(align.clone());
+                }
+                TextItem::PlainText(text) => {
+                    let plain_text = PlainText {
+                        text: text.clone(),
+                        text_style: text_style.clone(),
+                    };
+                    if let Some(last_line) = self.text_items.last_mut() {
+                        last_line.push(plain_text);
+                    } else {
+                        let mut line = vec![];
+                        line.push(plain_text);
+                        self.text_items.push(line);
+                    }
+                }
+            }
+        }
+    }
+
+    fn width(&self, font_size: usize) -> f64 {
+        let mut width = 0.0;
+        for line in self.text_items.iter() {
+            let mut line_width = 0.0;
+            for item in line.iter() {
+                let text_size = get_size_for_str(&item.text, font_size);
+                line_width += text_size.x;
+            }
+            if width < line_width {
+                width = line_width;
+            }
+        }
+        width
+    }
+    fn height(&self, font_size: usize) -> f64 {
+        let mut height = 0.0;
+        for line in self.text_items.iter() {
+            // TODO: we are going with the last with the assumption that heigh is the same for every plaintext,
+            // which is correct for the current get_size_for_str implementation
+            if let Some(last_line) = line.last() {
+                let text_size = get_size_for_str(&last_line.text, font_size);
+                height += text_size.y;
+            }
+        }
+        height
+    }
+}
+
+impl HtmlGrid {
+    pub(crate) fn size(&self, font_size: usize) -> Point {
+        match self {
+            HtmlGrid::Text(text) => {
+                Point::new(text.width(font_size), text.height(font_size))
+            }
+            HtmlGrid::FontTable(table_grid) => table_grid.size(font_size),
+        }
+    }
+    fn from_html(html: &Html) -> Self {
+        match html {
+            Html::Text(text) => {
+                let mut text_grid = TextGrid::new();
+                let text_style = TextStyle {
+                    font: Font::new(),
+                    font_style: FontStyle::Normal,
+                    font_weight: FontWeight::Normal,
+                    text_decoration: TextDecoration::new(),
+                    baseline_shift: BaselineShift::Normal,
+                };
+                text_grid.collect_from_text(text, &text_style);
+                HtmlGrid::Text(text_grid)
+            }
+            Html::FontTable(table) => {
+                HtmlGrid::FontTable(TableGrid::from_table(table))
+            }
+        }
+    }
+}
+
+fn is_text_table_wrapper_invalid(text: &str) -> bool {
+    for line in text.lines() {
+        if !line.is_empty() {
+            return true;
+        }
+    }
+    false
+}
+
+#[derive(Debug, Clone)]
+struct TableHashGrid {
     pub(crate) cells: Vec<(TdAttr, DotCellGrid)>,
     pub(crate) occupation: HashMap<(usize, usize), usize>, // x, y, cell index
 }
 
-impl TableGridInner {
+impl TableHashGrid {
     fn width(&self) -> usize {
         self.occupation.keys().map(|(x, _)| *x).max().unwrap_or(0) + 1
     }
     fn height(&self) -> usize {
         self.occupation.keys().map(|(_, y)| *y).max().unwrap_or(0) + 1
     }
-    fn pretty_print(&self) {
-        // print in a table format with + indicating occupied and - indicating free
-        let width = self.width();
-        let height = self.height();
-        let mut table = vec![vec!['-'; width]; height];
-        for (x, y) in self.occupation.keys() {
-            table[*y][*x] = '+';
-        }
-        for y in 0..height {
-            for x in 0..width {
-                print!("{}", table[y][x]);
-            }
-            println!();
-        }
-    }
+    // fn pretty_print(&self) {
+    //     // print in a table format with + indicating occupied and - indicating free
+    //     let width = self.width();
+    //     let height = self.height();
+    //     let mut table = vec![vec!['-'; width]; height];
+    //     for (x, y) in self.occupation.keys() {
+    //         table[*y][*x] = '+';
+    //     }
+    //     for y in 0..height {
+    //         for x in 0..width {
+    //             print!("{}", table[y][x]);
+    //         }
+    //         println!();
+    //     }
+    // }
     fn add_cell(
         &mut self,
         x: usize,
@@ -1474,19 +1525,6 @@ impl TableGridInner {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct TableGrid {
-    pub(crate) cells: Vec<(TdAttr, DotCellGrid)>,
-    pub(crate) grid: Vec<Option<usize>>,
-    pub(crate) width_arr: Vec<f64>, // width in svg units
-    pub(crate) height_arr: Vec<f64>, // height in svg units
-    width_in_cell: usize,           // width of the table in cells
-    height_in_cell: usize,          // height of the table in cells
-    font_size: usize,
-    pub(crate) table_attr: TableAttr,
-    pub(crate) table_tag: TableTag,
-}
-
 impl TableGrid {
     pub(crate) fn width(&self) -> f64 {
         self.width_arr.iter().sum::<f64>()
@@ -1546,12 +1584,12 @@ impl TableGrid {
     }
 
     fn from_table(font_table: &FontTable) -> Self {
-        let table_grid_inner = TableGridInner::from_table(font_table);
-        let width_in_cell = table_grid_inner.width();
-        let height_in_cell = table_grid_inner.height();
+        let table_hash_grid = TableHashGrid::from_table(font_table);
+        let width_in_cell = table_hash_grid.width();
+        let height_in_cell = table_hash_grid.height();
         let mut grid = vec![None; width_in_cell * height_in_cell];
         for (idx, (_td_attr, dot_cell)) in
-            table_grid_inner.cells.iter().enumerate()
+            table_hash_grid.cells.iter().enumerate()
         {
             for i in 0..dot_cell.width_in_cell {
                 for j in 0..dot_cell.height_in_cell {
@@ -1563,7 +1601,7 @@ impl TableGrid {
         }
 
         Self {
-            cells: table_grid_inner.cells,
+            cells: table_hash_grid.cells,
             grid,
             width_arr: vec![1.0; width_in_cell],
             height_arr: vec![1.0; height_in_cell],

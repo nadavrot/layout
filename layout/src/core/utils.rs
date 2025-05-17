@@ -13,7 +13,7 @@ pub fn save_to_file(filename: &str, content: &str) -> Result<(), Error> {
     Result::Ok(())
 }
 
-pub fn read_png_size(filename: &str) -> Result<(u32, u32), Error> {
+pub(crate) fn get_png_size(filename: &str) -> Result<(u32, u32), Error> {
     let mut f = File::open(filename)?;
     let mut signature = [0; 8];
 

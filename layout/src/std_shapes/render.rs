@@ -465,29 +465,23 @@ fn render_cell(
         LabelOrImgGrid::Img(img) => {
             let mut look = look.clone();
             look.fill_color = Option::None;
-            let image_size =
-                crate::core::utils::read_png_size(&img.source).unwrap();
+            let image_size = img.size();
             let image_size = match &img.scale {
-                Scale::False => {
-                    Point::new(image_size.0 as f64, image_size.1 as f64)
-                }
+                Scale::False => Point::new(image_size.x, image_size.y),
                 Scale::True => {
-                    let x_scale = size.x / image_size.0 as f64;
-                    let y_scale = size.y / image_size.1 as f64;
+                    let x_scale = size.x / image_size.x;
+                    let y_scale = size.y / image_size.y;
                     let scale =
                         if x_scale < y_scale { x_scale } else { y_scale };
-                    Point::new(
-                        image_size.0 as f64 * scale,
-                        image_size.1 as f64 * scale,
-                    )
+                    Point::new(image_size.x * scale, image_size.y * scale)
                 }
                 Scale::Width => {
-                    let scale = size.x / image_size.0 as f64;
-                    Point::new(image_size.0 as f64 * scale, image_size.1 as f64)
+                    let scale = size.x / image_size.x;
+                    Point::new(image_size.x * scale, image_size.y)
                 }
                 Scale::Height => {
-                    let scale = size.y / image_size.1 as f64;
-                    Point::new(image_size.0 as f64, image_size.1 as f64 * scale)
+                    let scale = size.y / image_size.y;
+                    Point::new(image_size.x, image_size.y * scale)
                 }
                 Scale::Both => size.clone(),
             };
