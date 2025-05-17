@@ -6,7 +6,7 @@ use crate::core::style::{
     Align, BAlign, BaselineShift, FontStyle, FontWeight, StyleAttr,
     TextDecoration, VAlign,
 };
-use crate::core::utils::get_png_size;
+use crate::core::utils::get_image_size;
 
 pub(crate) fn parse_html_string(input: &str) -> Result<HtmlGrid, String> {
     let mut parser = HtmlParser {
@@ -875,16 +875,16 @@ impl Image {
     }
 
     fn width(&self) -> f64 {
-        let size = get_png_size(&self.source).unwrap();
+        let size = get_image_size(&self.source).unwrap();
         size.0 as f64
     }
     fn height(&self) -> f64 {
-        let size = get_png_size(&self.source).unwrap();
+        let size = get_image_size(&self.source).unwrap();
         size.1 as f64
     }
 
     pub(crate) fn size(&self) -> Point {
-        let size = get_png_size(&self.source).unwrap();
+        let size = get_image_size(&self.source).unwrap();
         Point::new(size.0 as f64, size.1 as f64)
     }
 }

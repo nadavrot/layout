@@ -13,7 +13,22 @@ pub fn save_to_file(filename: &str, content: &str) -> Result<(), Error> {
     Result::Ok(())
 }
 
-pub(crate) fn get_png_size(filename: &str) -> Result<(u32, u32), Error> {
+pub(crate) fn get_image_size(filename: &str) -> Result<(u32, u32), Error> {
+    
+    if let Ok(image_size) = get_png_size(filename) {
+        return Ok(image_size);
+    }
+
+    // TODO: Add support for other image formats (e.g., JPEG, SVG) following graphviz specs
+
+    Err(Error::new(
+        std::io::ErrorKind::InvalidData,
+        "Unsupported image format",
+    ))
+}
+
+
+fn get_png_size(filename: &str) -> Result<(u32, u32), Error> {
     let mut f = File::open(filename)?;
     let mut signature = [0; 8];
 
