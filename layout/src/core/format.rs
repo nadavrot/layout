@@ -102,6 +102,15 @@ pub trait RenderBackend {
         text: &str,
     );
 
+    /// Embeds an image in the canvas.
+    fn draw_image(
+        &mut self,
+        xy: Point,
+        size: Point,
+        file_path: &str,
+        properties: Option<String>,
+    );
+
     /// Generate a clip region that shapes can use to create complex shapes.
     fn create_clip(
         &mut self,

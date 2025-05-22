@@ -2,8 +2,8 @@
 
 use crate::core::color::Color;
 use crate::core::format::{ClipHandle, RenderBackend};
-use crate::core::geometry::Point;
-use crate::core::style::StyleAttr;
+use crate::core::geometry::{get_size_for_str, Point};
+use crate::core::style::{StyleAttr, TextDecoration};
 use std::collections::HashMap;
 
 static SVG_HEADER: &str =
@@ -82,6 +82,28 @@ impl Default for SVGWriter {
 // This trivial implementation of `drop` adds a print to a file.
 impl Drop for SVGWriter {
     fn drop(&mut self) {}
+}
+
+#[inline]
+fn svg_text_decoration_str(text_decoration: &TextDecoration) -> String {
+    if !text_decoration.underline
+        && !text_decoration.overline
+        && !text_decoration.line_through
+    {
+        return String::new();
+    }
+    let mut result = "text-decoration=\"".to_string();
+    if text_decoration.underline {
+        result.push_str("underline ");
+    }
+    if text_decoration.overline {
+        result.push_str("overline ");
+    }
+    if text_decoration.line_through {
+        result.push_str("line-through ");
+    }
+    result.push_str("\"");
+    result
 }
 
 impl SVGWriter {
@@ -214,11 +236,12 @@ impl RenderBackend for SVGWriter {
     fn draw_text(&mut self, xy: Point, text: &str, look: &StyleAttr) {
         let len = text.len();
 
-        let font_class = self.get_or_create_font_style(look.font_size);
+        let font_color = look.font_color;
+        let font_size = look.font_size;
+        let font_family = look.fontname.clone();
+        let size = get_size_for_str(text, font_size);
 
         let mut content = String::new();
-        let cnt = 1 + text.lines().count();
-        let size_y = (cnt * look.font_size) as f64;
         for line in text.lines() {
             content.push_str(&format!("<tspan x = \"{}\" dy=\"1.0em\">", xy.x));
             content.push_str(&escape_string(line));
@@ -226,12 +249,40 @@ impl RenderBackend for SVGWriter {
         }
 
         self.grow_window(xy, Point::new(10., len as f64 * 10.));
+        let font_style_text = match look.font_style {
+            crate::core::style::FontStyle::Italic => "font-style=\"italic\"",
+            crate::core::style::FontStyle::None => "",
+        };
+        let font_weight_text = match look.font_weight {
+            crate::core::style::FontWeight::Bold => "font-weight=\"bold\"",
+            crate::core::style::FontWeight::None => "",
+        };
+        let text_decoration_str =
+            svg_text_decoration_str(&look.text_decoration);
+
+        let baseline_shift_str = match look.baseline_shift {
+            crate::core::style::BaselineShift::Sub => {
+                "dominant-baseline=\"text-bottom\""
+            }
+            crate::core::style::BaselineShift::Super => {
+                "dominant-baseline=\"text-top\""
+            }
+            crate::core::style::BaselineShift::Normal => {
+                "dominant-baseline=\"auto\""
+            }
+        };
         let line = format!(
-            "<text dominant-baseline=\"middle\" text-anchor=\"middle\" 
-            x=\"{}\" y=\"{}\" class=\"{}\">{}</text>",
+            "<text {} text-anchor=\"middle\" 
+            x=\"{}\" y=\"{}\" font-size=\"{}\" font-family=\"{}\" {} {} {} fill=\"{}\">{}</text>",
+            baseline_shift_str,
             xy.x,
-            xy.y - size_y / 2.,
-            font_class,
+            xy.y - size.y / 2.,
+            font_size,
+            font_family,
+            font_style_text,
+            text_decoration_str,
+            font_weight_text,
+            font_color.to_web_color(),
             &content
         );
 
@@ -326,6 +377,25 @@ impl RenderBackend for SVGWriter {
         );
         self.content.push_str(&line);
         self.counter += 1;
+    }
+
+    fn draw_image(
+        &mut self,
+        xy: Point,
+        size: Point,
+        file_path: &str,
+        properties: Option<String>,
+    ) {
+        self.grow_window(xy, size);
+        let props = properties.unwrap_or_default();
+        let line1 = format!(
+            "<g {props}>\n
+             <image x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" \
+             href=\"{}\" />\n
+             </g>\n",
+            xy.x, xy.y, size.x, size.y, file_path
+        );
+        self.content.push_str(&line1);
     }
 
     fn draw_line(
