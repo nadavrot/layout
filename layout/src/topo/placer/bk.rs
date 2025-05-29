@@ -1,17 +1,41 @@
 //! This module implements block placement that's based on the Brandes and Kopf
 //! paper "Fast and Simple Horizontal Coordinate Assignment."
 
+use super::simple;
 use crate::adt::dag::NodeHandle;
 use crate::core::geometry::weighted_median;
 use crate::topo::layout::VisualGraph;
 use std::collections::HashSet;
+use std::iter::Iterator;
+use std::iter::Rev;
 
-use super::simple;
+#[derive(Clone)]
+enum RangeEither {
+    Range(std::ops::Range<usize>),
+    RangeRev(Rev<std::ops::Range<usize>>),
+}
+
+impl Iterator for RangeEither {
+    type Item = usize;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            RangeEither::Range(range) => range.next(),
+            RangeEither::RangeRev(range) => range.next(),
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy)]
 enum OrderLR {
     LeftToRight,
     RightToLeft,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum OrderTB {
+    TopToBottom,
+    BottomToTop,
 }
 
 impl OrderLR {
@@ -29,13 +53,20 @@ struct NodeAttachInfo {
     above: Vec<Option<NodeHandle>>,
     /// For each node, marks which node in the row below aligns to it.
     below: Vec<Option<NodeHandle>>,
+    order_tb: OrderTB,
+    order_lr: OrderLR,
 }
 
 impl NodeAttachInfo {
-    fn new(size: usize) -> Self {
+    fn new(size: usize, order_tb: OrderTB, order_lr: OrderLR) -> Self {
         let above = vec![None; size];
         let below = vec![None; size];
-        Self { above, below }
+        Self {
+            above,
+            below,
+            order_tb,
+            order_lr,
+        }
     }
 
     /// Align the node \p from to \p to.
@@ -60,12 +91,18 @@ impl NodeAttachInfo {
     /// relationship that is expressed in this data-structure.
     fn get_verticals(&mut self) -> VerticalList {
         // The list of constructed verticals.
-        let mut res = VerticalList::new();
+        let mut res = VerticalList::new(self.order_tb, self.order_lr);
         // The list of used nodes.
         let mut used: Vec<bool> = vec![false; self.above.len()];
 
+        let idx_range = match self.order_tb {
+            OrderTB::TopToBottom => RangeEither::Range(0..self.above.len()),
+            OrderTB::BottomToTop => {
+                RangeEither::RangeRev((0..self.above.len()).rev())
+            }
+        };
         // For each node in the graph:
-        for i in 0..self.above.len() {
+        for i in idx_range {
             let mut vertical: Vec<NodeHandle> = Vec::new();
 
             // Don't visit visited nodes.
@@ -93,7 +130,7 @@ impl NodeAttachInfo {
                 vertical.push(NodeHandle::from(idx));
             }
             used[idx] = true;
-            res.push(vertical);
+            res.push_vertical(vertical);
         }
 
         res
@@ -110,14 +147,17 @@ struct Scheduler<'a> {
     // For ech row, saves the end point of the last box.
     last_x_for_row: Vec<f64>,
     // The node placement order (left to right, or right to left).
-    order: OrderLR,
+    order_lr: OrderLR,
+    order_tb: OrderTB,
 }
 
 impl<'a> Scheduler<'a> {
-    fn new(vg: &'a VisualGraph, vl: VerticalList, order: OrderLR) -> Self {
+    fn new(vg: &'a VisualGraph, vl: VerticalList) -> Self {
+        let order_lr = vl.order_lr;
+        let order_tb = vl.order_tb;
         let xs = vec![0.; vg.num_nodes()];
         let idx = vec![0; vg.dag.num_levels()];
-        let v = if order.is_left_to_right() {
+        let v = if order_lr.is_left_to_right() {
             f64::NEG_INFINITY
         } else {
             f64::INFINITY
@@ -129,7 +169,8 @@ impl<'a> Scheduler<'a> {
             x_coordinates: xs,
             sched_idx: idx,
             last_x_for_row,
-            order,
+            order_lr,
+            order_tb,
         }
     }
 
@@ -138,22 +179,28 @@ impl<'a> Scheduler<'a> {
     }
 
     fn schedule(&mut self) {
-        for v in &self.vl {
+        for v in &self.vl.list {
             self.verify_vertical(v);
         }
 
         let mut to_place = self.vl.len();
-
+        let idx_range = match self.order_tb {
+            OrderTB::TopToBottom => RangeEither::Range(0..self.vl.len()),
+            OrderTB::BottomToTop => {
+                RangeEither::RangeRev((0..self.vl.len()).rev())
+            }
+        };
         while to_place > 0 {
-            for i in 0..self.vl.len() {
+            // for idx in 0..self.vl.len() {
+            for i in idx_range.clone() {
                 if !self.is_vertical_ready(i) {
                     continue;
                 }
                 // Place the nodes.
-                let x = self.first_schedule_x(&self.vl[i]);
+                let x = self.first_schedule_x(&self.vl.list[i]);
                 self.place_vertical(i, x);
                 // Wipe the vertical.
-                self.vl[i].clear();
+                self.vl.list[i].clear();
                 to_place -= 1;
             }
         }
@@ -167,13 +214,13 @@ impl<'a> Scheduler<'a> {
             let last = self.last_x_for_row[level];
             let pos = self.vg.pos(*elem);
 
-            let offset = if self.order.is_left_to_right() {
+            let offset = if self.order_lr.is_left_to_right() {
                 pos.distance_to_left(true)
             } else {
                 pos.distance_to_right(true)
             };
 
-            if self.order.is_left_to_right() {
+            if self.order_lr.is_left_to_right() {
                 last_offset_x = last_offset_x.max(last + offset);
             } else {
                 last_offset_x = last_offset_x.min(last - offset);
@@ -184,14 +231,14 @@ impl<'a> Scheduler<'a> {
 
     // Place the nodes in the vertical into the schedule.
     fn place_vertical(&mut self, i: usize, center_x: f64) {
-        let v = &self.vl[i];
+        let v = &self.vl.list[i];
         for elem in v {
             // Record the x coordinate for the vertical.
             self.x_coordinates[elem.get_index()] = center_x;
             // Update the last x value for the row.
             let level = self.vg.dag.level(*elem);
             let pos = self.vg.pos(*elem);
-            if self.order.is_left_to_right() {
+            if self.order_lr.is_left_to_right() {
                 let side_x = pos.distance_to_right(true);
                 self.last_x_for_row[level] = center_x + side_x;
             } else {
@@ -221,7 +268,7 @@ impl<'a> Scheduler<'a> {
         let len = row.len();
 
         if first_free < len {
-            return if self.order.is_left_to_right() {
+            return if self.order_lr.is_left_to_right() {
                 row[first_free] == node
             } else {
                 row[len - first_free - 1] == node
@@ -233,7 +280,7 @@ impl<'a> Scheduler<'a> {
     /// \returns True if the vertical \p idx is ready for scheduling (if all of
     /// the dependencies are met).
     fn is_vertical_ready(&self, idx: usize) -> bool {
-        let vert = &self.vl[idx];
+        let vert = &self.vl.list[idx];
         if vert.is_empty() {
             return false;
         }
@@ -251,6 +298,13 @@ pub struct BK<'a> {
     vg: &'a mut VisualGraph,
 }
 
+#[derive(Debug, Clone)]
+enum MedianNodes {
+    None,
+    Single(NodeHandle),
+    Double(NodeHandle, NodeHandle),
+}
+
 // A set of edges between two nodes in the graph.
 type EdgeSet = HashSet<(NodeHandle, NodeHandle)>;
 // Represents an edge between two rows (index of the element in the row).
@@ -258,7 +312,29 @@ type EdgeIdxs = (usize, usize);
 // A list of nodes that are vertically aligned.
 type Vertical = Vec<NodeHandle>;
 // Represents a list of nodes that needs to be scheduled vertically.
-type VerticalList = Vec<Vertical>;
+struct VerticalList {
+    list: Vec<Vertical>,
+    order_tb: OrderTB,
+    order_lr: OrderLR,
+}
+
+impl VerticalList {
+    fn new(order_tb: OrderTB, order_lr: OrderLR) -> Self {
+        Self {
+            list: Vec::new(),
+            order_tb,
+            order_lr,
+        }
+    }
+
+    fn push_vertical(&mut self, v: Vertical) {
+        self.list.push(v);
+    }
+
+    fn len(&self) -> usize {
+        self.list.len()
+    }
+}
 
 impl<'a> BK<'a> {
     pub(crate) fn new(vg: &'a mut VisualGraph) -> Self {
@@ -284,9 +360,16 @@ impl<'a> BK<'a> {
 
     /// Compute and return a list of successor edges that don't cross the
     /// internal edges (edges between connection nodes).
-    fn get_valid_edges(&self) -> EdgeSet {
+    fn get_valid_edges(&self, order_tb: OrderTB) -> EdgeSet {
         let mut valid_edges: EdgeSet = EdgeSet::new();
-        for i in 0..self.vg.dag.num_levels() - 1 {
+        let num_levels = self.vg.dag.num_levels();
+        let idx_range = match order_tb {
+            OrderTB::TopToBottom => RangeEither::Range(0..num_levels - 1),
+            OrderTB::BottomToTop => {
+                RangeEither::RangeRev((0..num_levels - 1).rev())
+            }
+        };
+        for i in idx_range {
             let r0 = self.vg.dag.row(i);
             let r1 = self.vg.dag.row(i + 1);
             let edges = self.extract_edges_with_no_type2_conflict(r0, r1);
@@ -309,7 +392,8 @@ impl<'a> BK<'a> {
         // For each node in R0:
         for (idx0, elem) in r0.iter().enumerate() {
             // For each successor:
-            for succ in self.vg.succ(*elem) {
+            let nodes = self.vg.succ(*elem);
+            for succ in nodes {
                 // Check if and where it points to in R1. (we could have
                 // same-row self-edges).
                 if let Option::Some(idx1) = r1.iter().position(|&r| r == *succ)
@@ -353,12 +437,12 @@ impl<'a> BK<'a> {
     /// Computes the median of the predecessors, considering only allowed edges.
     /// Returns a list of x coordinates, for each node in the graph. If the node
     /// has no predecessors then the procedure returns the value zero.
-    fn get_pred_medians(&self, valid_edges: EdgeSet) -> Vec<f64> {
+    fn get_neighbour_medians(&self, valid_edges: EdgeSet) -> Vec<MedianNodes> {
         // Builds the median of preds for each node.
-        let mut res: Vec<f64> = Vec::new();
+        let mut res = Vec::new();
 
         // Collect a list of the pred's x coordinates.
-        let mut pos_list: Vec<f64> = Vec::new();
+        let mut pos_list = Vec::new();
 
         // For each node.
         for node in self.vg.iter_nodes() {
@@ -371,15 +455,31 @@ impl<'a> BK<'a> {
                 if !valid_edges.contains(&(*pred, node)) {
                     continue;
                 }
-                let pos = self.vg.pos(*pred).center().x;
-                pos_list.push(pos)
+                pos_list.push(*pred)
             }
+            pos_list.sort_by(|a, b| {
+                self.vg
+                    .pos(*a)
+                    .center()
+                    .x
+                    .partial_cmp(&self.vg.pos(*b).center().x)
+                    .unwrap()
+            });
 
             // Merge all of the predecessors into one median value.
             if pos_list.is_empty() {
-                res.push(0.);
+                res.push(MedianNodes::None);
             } else {
-                res.push(weighted_median(&pos_list));
+                if pos_list.len() % 2 == 0 {
+                    let mid = pos_list.len() / 2;
+                    res.push(MedianNodes::Double(
+                        pos_list[mid - 1],
+                        pos_list[mid],
+                    ));
+                } else {
+                    let mid = pos_list.len() / 2;
+                    res.push(MedianNodes::Single(pos_list[mid]));
+                }
             }
         }
         res
@@ -390,18 +490,30 @@ impl<'a> BK<'a> {
         (0..vec.len()).find(|&i| vec[i] == elem)
     }
 
-    fn compute_alignment(&self, order: OrderLR) -> NodeAttachInfo {
+    fn compute_alignment(
+        &self,
+        order_lr: OrderLR,
+        order_tb: OrderTB,
+    ) -> NodeAttachInfo {
         let num = self.vg.num_nodes();
-        let mut align_info = NodeAttachInfo::new(num);
+        let mut align_info = NodeAttachInfo::new(num, order_tb, order_lr);
 
         // Computes important edges (with no type2 conflicts).
-        let valid_edges = self.get_valid_edges();
+        let valid_edges = self.get_valid_edges(order_tb);
 
         // The desired medians for each node in the graph.
-        let medians: Vec<f64> = self.get_pred_medians(valid_edges);
+        let medians = self.get_neighbour_medians(valid_edges);
 
-        for i in 0..self.vg.dag.num_levels() - 1 {
-            // The row above.
+        let idx_range = match order_tb {
+            OrderTB::TopToBottom => {
+                RangeEither::Range(0..self.vg.dag.num_levels() - 1)
+            }
+            OrderTB::BottomToTop => {
+                RangeEither::RangeRev((0..self.vg.dag.num_levels() - 1).rev())
+            }
+        };
+
+        for i in idx_range {
             let mut r0 = self.vg.dag.row(i).clone();
             // The current row.
             let mut r1 = self.vg.dag.row(i + 1).clone();
@@ -410,36 +522,46 @@ impl<'a> BK<'a> {
 
             // Simulate searching from the right by reversing the order of the
             // edges, and the order of the collisions.
-            if !order.is_left_to_right() {
+            if !order_lr.is_left_to_right() {
                 r1.reverse();
                 r0.reverse();
             }
 
             for node in r1 {
-                let node_x = medians[node.get_index()];
                 let mut best_idx: Option<usize> = None;
-                let mut best_delta = f64::INFINITY;
 
-                // Scan the predecessors:
-                for pred in self.vg.preds(node) {
-                    let idx;
-                    // Search for the index of the predecessor in the row.
-                    if let Some(idx_in_row) = Self::index_of(*pred, &r0) {
-                        idx = idx_in_row;
-                    } else {
-                        continue;
+                match medians[node.get_index()] {
+                    MedianNodes::None => {}
+                    MedianNodes::Single(pred) => {
+                        // Find the index of the predecessor in the row.
+                        if let Some(idx_in_row) = Self::index_of(pred, &r0) {
+                            // Don't mess with nodes that are taken.
+                            if !used[idx_in_row] {
+                                best_idx = Some(idx_in_row);
+                            }
+                        }
                     }
-
-                    // Don't mess with nodes that are taken.
-                    if used[idx] {
-                        continue;
-                    }
-
-                    // Of the remaining edges, select the closest one.
-                    let delta = (self.vg.pos(*pred).center().x - node_x).abs();
-                    if delta < best_delta {
-                        best_idx = Some(idx);
-                        best_delta = delta;
+                    MedianNodes::Double(pred1, pred2) => {
+                        // traversal of the predecessors is done in the order of the
+                        // alignment, so we need to reverse if necessary.
+                        let (pred1, pred2) = if order_lr.is_left_to_right() {
+                            (pred1, pred2)
+                        } else {
+                            (pred2, pred1)
+                        };
+                        if let Some(idx_in_row) = Self::index_of(pred1, &r0) {
+                            // Don't mess with nodes that are taken.
+                            if !used[idx_in_row] {
+                                best_idx = Some(idx_in_row);
+                            } else if let Some(idx_in_row) =
+                                Self::index_of(pred2, &r0)
+                            {
+                                // Don't mess with nodes that are taken.
+                                if !used[idx_in_row] {
+                                    best_idx = Some(idx_in_row);
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -458,27 +580,37 @@ impl<'a> BK<'a> {
     }
 
     pub(crate) fn do_it(&mut self) {
-        let vl = self.compute_alignment(OrderLR::RightToLeft).get_verticals();
-        let mut sc0 = Scheduler::new(self.vg, vl, OrderLR::RightToLeft);
+        let vl = self
+            .compute_alignment(OrderLR::RightToLeft, OrderTB::BottomToTop)
+            .get_verticals();
+        let mut sc0 = Scheduler::new(self.vg, vl);
         sc0.schedule();
-        let vl = self.compute_alignment(OrderLR::RightToLeft).get_verticals();
-        let mut sc1 = Scheduler::new(self.vg, vl, OrderLR::LeftToRight);
-        sc1.schedule();
-        let vl = self.compute_alignment(OrderLR::LeftToRight).get_verticals();
-        let mut sc2 = Scheduler::new(self.vg, vl, OrderLR::RightToLeft);
-        sc2.schedule();
-        let vl = self.compute_alignment(OrderLR::LeftToRight).get_verticals();
-        let mut sc3 = Scheduler::new(self.vg, vl, OrderLR::LeftToRight);
-        sc3.schedule();
-
         let xs0 = sc0.get_x_placement();
+
+        let vl = self
+            .compute_alignment(OrderLR::RightToLeft, OrderTB::TopToBottom)
+            .get_verticals();
+        let mut sc1 = Scheduler::new(self.vg, vl);
+        sc1.schedule();
         let xs1 = sc1.get_x_placement();
+
+        let vl = self
+            .compute_alignment(OrderLR::LeftToRight, OrderTB::BottomToTop)
+            .get_verticals();
+        let mut sc2 = Scheduler::new(self.vg, vl);
+        sc2.schedule();
         let xs2 = sc2.get_x_placement();
+
+        let vl = self
+            .compute_alignment(OrderLR::LeftToRight, OrderTB::TopToBottom)
+            .get_verticals();
+        let mut sc3 = Scheduler::new(self.vg, vl);
+        sc3.schedule();
         let xs3 = sc3.get_x_placement();
 
-        for i in 0..xs0.len() {
+        for i in 0..xs3.len() {
             let node = NodeHandle::from(i);
-            let val = (xs0[i] + xs1[i] + xs2[i] + xs3[i]) / 4.0;
+            let val = weighted_median(&[xs0[i], xs1[i], xs2[i], xs3[i]]);
             self.vg.pos_mut(node).set_x(val);
         }
 
@@ -504,7 +636,8 @@ fn edge_crossing() {
 
 #[test]
 fn test_extract_verticals() {
-    let mut ai = NodeAttachInfo::new(6);
+    let mut ai =
+        NodeAttachInfo::new(6, OrderTB::TopToBottom, OrderLR::LeftToRight);
     ai.add(NodeHandle::new(0), NodeHandle::new(1));
     ai.add(NodeHandle::new(1), NodeHandle::new(2));
     ai.add(NodeHandle::new(2), NodeHandle::new(3));
@@ -512,11 +645,12 @@ fn test_extract_verticals() {
 
     let verticals = ai.get_verticals();
 
+    let vertical_list = &verticals.list;
     assert_eq!(verticals.len(), 2);
-    assert_eq!(verticals[0][0].get_index(), 0);
-    assert_eq!(verticals[0][1].get_index(), 1);
-    assert_eq!(verticals[0][2].get_index(), 2);
-    assert_eq!(verticals[0][3].get_index(), 3);
-    assert_eq!(verticals[1][0].get_index(), 4);
-    assert_eq!(verticals[1][1].get_index(), 5);
+    assert_eq!(vertical_list[0][0].get_index(), 0);
+    assert_eq!(vertical_list[0][1].get_index(), 1);
+    assert_eq!(vertical_list[0][2].get_index(), 2);
+    assert_eq!(vertical_list[0][3].get_index(), 3);
+    assert_eq!(vertical_list[1][0].get_index(), 4);
+    assert_eq!(vertical_list[1][1].get_index(), 5);
 }
