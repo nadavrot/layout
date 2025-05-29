@@ -251,6 +251,12 @@ pub struct BK<'a> {
     vg: &'a mut VisualGraph,
 }
 
+enum MedianNodes {
+    None,
+    Single(NodeHandle),
+    Double(NodeHandle, NodeHandle),
+}
+
 // A set of edges between two nodes in the graph.
 type EdgeSet = HashSet<(NodeHandle, NodeHandle)>;
 // Represents an edge between two rows (index of the element in the row).
@@ -353,12 +359,12 @@ impl<'a> BK<'a> {
     /// Computes the median of the predecessors, considering only allowed edges.
     /// Returns a list of x coordinates, for each node in the graph. If the node
     /// has no predecessors then the procedure returns the value zero.
-    fn get_pred_medians(&self, valid_edges: EdgeSet) -> Vec<f64> {
+    fn get_pred_medians(&self, valid_edges: EdgeSet) -> Vec<MedianNodes> {
         // Builds the median of preds for each node.
-        let mut res: Vec<f64> = Vec::new();
+        let mut res = Vec::new();
 
         // Collect a list of the pred's x coordinates.
-        let mut pos_list: Vec<f64> = Vec::new();
+        let mut pos_list = Vec::new();
 
         // For each node.
         for node in self.vg.iter_nodes() {
@@ -371,15 +377,31 @@ impl<'a> BK<'a> {
                 if !valid_edges.contains(&(*pred, node)) {
                     continue;
                 }
-                let pos = self.vg.pos(*pred).center().x;
-                pos_list.push(pos)
+                pos_list.push(*pred)
             }
+            pos_list.sort_by(|a, b| {
+                self.vg
+                    .pos(*a)
+                    .center()
+                    .x
+                    .partial_cmp(&self.vg.pos(*b).center().x)
+                    .unwrap()
+            });
 
             // Merge all of the predecessors into one median value.
             if pos_list.is_empty() {
-                res.push(0.);
+                res.push(MedianNodes::None);
             } else {
-                res.push(weighted_median(&pos_list));
+                if pos_list.len() % 2 == 0 {
+                    let mid = pos_list.len() / 2;
+                    res.push(MedianNodes::Double(
+                        pos_list[mid - 1],
+                        pos_list[mid],
+                    ));
+                } else {
+                    let mid = pos_list.len() / 2;
+                    res.push(MedianNodes::Single(pos_list[mid]));
+                }
             }
         }
         res
@@ -398,7 +420,7 @@ impl<'a> BK<'a> {
         let valid_edges = self.get_valid_edges();
 
         // The desired medians for each node in the graph.
-        let medians: Vec<f64> = self.get_pred_medians(valid_edges);
+        let medians = self.get_pred_medians(valid_edges);
 
         for i in 0..self.vg.dag.num_levels() - 1 {
             // The row above.
@@ -416,30 +438,39 @@ impl<'a> BK<'a> {
             }
 
             for node in r1 {
-                let node_x = medians[node.get_index()];
                 let mut best_idx: Option<usize> = None;
-                let mut best_delta = f64::INFINITY;
 
-                // Scan the predecessors:
-                for pred in self.vg.preds(node) {
-                    let idx;
-                    // Search for the index of the predecessor in the row.
-                    if let Some(idx_in_row) = Self::index_of(*pred, &r0) {
-                        idx = idx_in_row;
-                    } else {
-                        continue;
+                match medians[node.get_index()] {
+                    MedianNodes::None => {}
+                    MedianNodes::Single(pred) => {
+                        // Find the index of the predecessor in the row.
+                        if let Some(idx_in_row) = Self::index_of(pred, &r0) {
+                            // Don't mess with nodes that are taken.
+                            if !used[idx_in_row] {
+                                best_idx = Some(idx_in_row);
+                            }
+                        }
                     }
-
-                    // Don't mess with nodes that are taken.
-                    if used[idx] {
-                        continue;
-                    }
-
-                    // Of the remaining edges, select the closest one.
-                    let delta = (self.vg.pos(*pred).center().x - node_x).abs();
-                    if delta < best_delta {
-                        best_idx = Some(idx);
-                        best_delta = delta;
+                    MedianNodes::Double(pred1, pred2) => {
+                        // traversal of the predecessors is done in the order of the
+                        // alignment, so we need to reverse if necessary.
+                        let (pred1, pred2) = if order.is_left_to_right() {
+                            (pred1, pred2)
+                        } else {
+                            (pred2, pred1)
+                        };
+                        if let Some(idx_in_row) = Self::index_of(pred1, &r0) {
+                            // Don't mess with nodes that are taken.
+                            if !used[idx_in_row] {
+                                best_idx = Some(idx_in_row);
+                            }
+                        }
+                        if let Some(idx_in_row) = Self::index_of(pred2, &r0) {
+                            // Don't mess with nodes that are taken.
+                            if !used[idx_in_row] {
+                                best_idx = Some(idx_in_row);
+                            }
+                        }
                     }
                 }
 
@@ -478,7 +509,7 @@ impl<'a> BK<'a> {
 
         for i in 0..xs0.len() {
             let node = NodeHandle::from(i);
-            let val = (xs0[i] + xs1[i] + xs2[i] + xs3[i]) / 4.0;
+            let val = weighted_median(&[xs0[i], xs1[i], xs2[i], xs3[i]]);
             self.vg.pos_mut(node).set_x(val);
         }
 
