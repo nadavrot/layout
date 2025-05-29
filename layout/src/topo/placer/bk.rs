@@ -553,12 +553,13 @@ impl<'a> BK<'a> {
                             // Don't mess with nodes that are taken.
                             if !used[idx_in_row] {
                                 best_idx = Some(idx_in_row);
-                            }
-                        }
-                        if let Some(idx_in_row) = Self::index_of(pred2, &r0) {
-                            // Don't mess with nodes that are taken.
-                            if !used[idx_in_row] {
-                                best_idx = Some(idx_in_row);
+                            } else if let Some(idx_in_row) =
+                                Self::index_of(pred2, &r0)
+                            {
+                                // Don't mess with nodes that are taken.
+                                if !used[idx_in_row] {
+                                    best_idx = Some(idx_in_row);
+                                }
                             }
                         }
                     }
@@ -607,7 +608,7 @@ impl<'a> BK<'a> {
         sc3.schedule();
         let xs3 = sc3.get_x_placement();
 
-        for i in 0..xs0.len() {
+        for i in 0..xs3.len() {
             let node = NodeHandle::from(i);
             let val = weighted_median(&[xs0[i], xs1[i], xs2[i], xs3[i]]);
             self.vg.pos_mut(node).set_x(val);
