@@ -14,7 +14,7 @@ fn test_main(n_node: usize, _n_edge: usize) {
 
     for i in 0..n_node {
         let elem = Element::create(
-            ShapeKind::Circle(format!("hi_{}", i)),
+            ShapeKind::Box(ShapeContent::String(format!("hi_{}", i))),
             StyleAttr::new(Color::transparent(), 0, None, 0, 0),
             Orientation::LeftToRight,
             Point::zero(),
@@ -29,7 +29,7 @@ fn test_main(n_node: usize, _n_edge: usize) {
     println!("Time elapsed in expensive_function() is: {:?}", duration);
     println!("--------------------------------------");
 }
-use layout::std_shapes::shapes::{Element, ShapeKind};
+use layout::std_shapes::shapes::{Element, ShapeContent, ShapeKind};
 use layout::topo::layout::VisualGraph;
 
 fn main() {
