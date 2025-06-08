@@ -1,6 +1,7 @@
 use super::ast;
 use super::lexer::Lexer;
 use super::lexer::Token;
+use crate::gv::parser::ast::DotString;
 
 #[derive(Debug, Clone)]
 pub struct DotParser {
@@ -155,8 +156,17 @@ impl DotParser {
                         Result::Ok(ast::Stmt::Edge(es))
                     }
                     Token::Equal => {
-                        let es = self.parse_attribute_stmt(id0)?;
-                        Result::Ok(ast::Stmt::Attribute(es))
+                        if id0.port.is_some() {
+                            return to_error("Can't assign into a port");
+                        }
+                        self.lex();
+                        let es = self.parse_attr_id()?;
+                        let mut list = ast::AttributeList::new();
+                        list.add_attr(id0.name, es);
+                        Result::Ok(ast::Stmt::Attribute(ast::AttrStmt::new(
+                            ast::AttrStmtTarget::Graph,
+                            list,
+                        )))
                     }
                     Token::Identifier(_) => {
                         let ns = ast::NodeStmt::new(id0);
@@ -246,34 +256,8 @@ impl DotParser {
             } else {
                 return to_error("Expected '='");
             }
-
-            if let Token::HtmlStart = self.tok.clone() {
-                if prop == "label" {
-                    let html = self.parse_html_string()?;
-                    lst.add_attr_html(&prop, &html);
-                    // self.lexer.mode = super::lexer::LexerMode::Normal;
-                    if let Token::HtmlEnd = self.tok.clone() {
-                        self.lex();
-                    } else {
-                        return to_error(
-                            format!("Expected '>', found {:?}", self.tok)
-                                .as_str(),
-                        );
-                    }
-                }
-            } else if let Token::Identifier(value) = self.tok.clone() {
-                lst.add_attr_str(&prop, &value);
-                // Consume the value name.
-                self.lex();
-            } else {
-                return to_error(
-                    format!(
-                        "Expected value after assignment, found {:?}",
-                        self.tok
-                    )
-                    .as_str(),
-                );
-            }
+            let value = self.parse_attr_id()?;
+            lst.add_attr(prop, value);
 
             // Skip semicolon.
             if let Token::Semicolon = self.tok.clone() {
@@ -307,30 +291,30 @@ impl DotParser {
     }
 
     // ID '=' ID
-    pub fn parse_attribute_stmt(
-        &mut self,
-        id: ast::NodeId,
-    ) -> Result<ast::AttrStmt, String> {
-        let mut lst = ast::AttributeList::new();
-
-        if id.port.is_some() {
-            return to_error("Can't assign into a port");
-        }
-
-        if let Token::Equal = self.tok.clone() {
+    pub fn parse_attr_id(&mut self) -> Result<DotString, String> {
+        if let Token::HtmlStart = self.tok.clone() {
+            let html = self.parse_html_string()?;
+            if let Token::HtmlEnd = self.tok.clone() {
+                self.lex();
+            } else {
+                return to_error(
+                    format!("Expected '>', found {:?}", self.tok).as_str(),
+                );
+            }
+            Result::Ok(DotString::HtmlString(html))
+        } else if let Token::Identifier(value) = self.tok.clone() {
+            // Consume the value name.
             self.lex();
+            Result::Ok(DotString::String(value))
         } else {
-            return to_error("Expected '='");
+            to_error(
+                format!(
+                    "Expected value after assignment, found {:?}",
+                    self.tok
+                )
+                .as_str(),
+            )
         }
-
-        if let Token::Identifier(val) = self.tok.clone() {
-            lst.add_attr_str(&id.name, &val);
-            self.lex();
-        } else {
-            return to_error("Expected identifier.");
-        }
-
-        Result::Ok(ast::AttrStmt::new(ast::AttrStmtTarget::Graph, lst))
     }
 
     //edge_stmt : (node_id | subgraph) edgeRHS [ attr_list ]

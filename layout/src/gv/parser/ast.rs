@@ -45,9 +45,8 @@ impl AttributeList {
             .push((from.to_string(), DotString::String(to.to_string())));
     }
 
-    pub fn add_attr_html(&mut self, from: &str, to: &str) {
-        self.list
-            .push((from.to_string(), DotString::HtmlString(to.to_string())));
+    pub fn add_attr(&mut self, from: String, to: DotString) {
+        self.list.push((from, to));
     }
 
     pub fn iter(&self) -> std::slice::Iter<(String, DotString)> {
