@@ -1,7 +1,7 @@
 use crate::core::geometry::do_boxes_intersect;
 use crate::topo::layout::VisualGraph;
 
-pub fn do_it(vg: &mut VisualGraph) {
+pub(crate) fn do_it(vg: &mut VisualGraph) {
     verify_order_in_rank(vg);
 }
 

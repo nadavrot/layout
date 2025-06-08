@@ -158,6 +158,8 @@ impl SVGWriter {
             self.view_size.y
         );
         result.push_str(&svg_line);
+        result
+            .push_str("<rect width=\"100%\" height=\"100%\" fill=\"white\" />");
         result.push_str(SVG_DEFS);
         result.push_str(&self.emit_svg_font_styles());
         result.push_str(&self.content);
