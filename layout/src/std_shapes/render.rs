@@ -86,7 +86,10 @@ pub fn get_shape_size(
                 Point::new(1., 1.)
             }
         }
-        ShapeKind::None => Point::new(1., 1.),
+        ShapeKind::None(text) => pad_shape_scalar(
+            get_size_for_content(text, font),
+            BOX_SHAPE_PADDING,
+        ),
     };
     if make_xy_same {
         res = make_size_square(res);
@@ -568,7 +571,15 @@ impl Renderable for Element {
         }
 
         match &self.shape {
-            ShapeKind::None => {}
+            ShapeKind::None(text) => {
+                draw_shape_content(
+                    text,
+                    self.pos.center(),
+                    self.pos.size(false),
+                    &self.look,
+                    canvas,
+                );
+            }
             ShapeKind::Record(rec) => {
                 render_record(
                     rec,
@@ -684,7 +695,35 @@ impl Renderable for Element {
         port: &Option<String>,
     ) -> (Point, Point) {
         match &self.shape {
-            ShapeKind::None => (Point::zero(), Point::zero()),
+            ShapeKind::None(x) => {
+                let loc = self.pos.center();
+                let size = self.pos.size(false);
+                // get_connection_point_for_box(loc, size, from, force)
+                match x {
+                    ShapeContent::String(_) => {
+                        get_connection_point_for_box(loc, size, from, force)
+                    }
+                    ShapeContent::Html(html) => {
+                        let mut loc = self.pos.center();
+                        let mut size = self.pos.size(false);
+                        if let Option::Some(port_name) = port {
+                            let r = get_html_port_location(
+                                html,
+                                loc,
+                                size,
+                                &mut Locator {
+                                    port_name: port_name.to_string(),
+                                    loc,
+                                    size,
+                                },
+                            );
+                            loc = r.0;
+                            size = r.1;
+                        }
+                        get_connection_point_for_box(loc, size, from, force)
+                    }
+                }
+            }
             ShapeKind::Record(rec) => {
                 let mut loc = self.pos.center();
                 let mut size = self.pos.size(false);

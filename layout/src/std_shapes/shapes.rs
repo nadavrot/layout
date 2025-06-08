@@ -44,7 +44,7 @@ impl RecordDef {
 
 #[derive(Debug, Clone)]
 pub enum ShapeKind {
-    None,
+    None(ShapeContent),
     Box(ShapeContent),
     Circle(ShapeContent),
     DoubleCircle(ShapeContent),

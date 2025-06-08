@@ -328,7 +328,7 @@ impl GraphBuilder {
                 }
                 DotString::HtmlString(val) => {
                     label = ShapeContent::Html(parse_html_string(val).unwrap());
-                    shape = ShapeKind::Circle(label.clone());
+                    shape = ShapeKind::None(label.clone());
                 }
             }
         }
@@ -363,6 +363,10 @@ impl GraphBuilder {
                         }
                         ShapeContent::Html(_) => {}
                     }
+                }
+                "circle" => {
+                    shape = ShapeKind::Circle(label);
+                    make_xy_same = true;
                 }
                 _ => {}
             }
@@ -433,6 +437,9 @@ impl GraphBuilder {
             ShapeKind::DoubleCircle(ShapeContent::Html(
                 HtmlGrid::FontTable(x),
             )) => {
+                x.resize(font_size);
+            }
+            ShapeKind::None(ShapeContent::Html(HtmlGrid::FontTable(x))) => {
                 x.resize(font_size);
             }
             _ => {}
