@@ -1,5 +1,7 @@
 //! A graph builder that converts parsed AST trees to graphs.
 
+use super::html::{parse_html_string, HtmlGrid};
+use super::parser::ast::DotString;
 use super::record::record_builder;
 use crate::adt::dag::NodeHandle;
 use crate::adt::map::ScopedMap;
@@ -13,7 +15,7 @@ use crate::std_shapes::shapes::*;
 use crate::topo::layout::VisualGraph;
 use std::collections::HashMap;
 
-type PropertyList = HashMap<String, String>;
+type PropertyList = HashMap<String, DotString>;
 
 // The methods in this file are responsible for converting the parsed Graphviz
 // AST into the VisualGraph data-structure that we use for layout and rendering
@@ -43,9 +45,9 @@ pub struct GraphBuilder {
     edges: Vec<EdgeDesc>,
     /// Scopes that maintain the property list that changes as we enter and
     /// leave different regions of the graph.
-    global_attr: ScopedMap<String, String>,
-    node_attr: ScopedMap<String, String>,
-    edge_attr: ScopedMap<String, String>,
+    global_attr: ScopedMap<String, DotString>,
+    node_attr: ScopedMap<String, DotString>,
+    edge_attr: ScopedMap<String, DotString>,
 }
 impl Default for GraphBuilder {
     fn default() -> Self {
@@ -182,7 +184,9 @@ impl GraphBuilder {
         let mut dir = Orientation::TopToBottom;
 
         // Set the graph orientation based on the 'rankdir' property.
-        if let Option::Some(rd) = self.global_state.get("rankdir") {
+        if let Option::Some(DotString::String(rd)) =
+            self.global_state.get("rankdir")
+        {
             if rd == "LR" {
                 dir = Orientation::LeftToRight;
             }
@@ -239,22 +243,30 @@ impl GraphBuilder {
         let mut color = String::from("black");
         let mut line_style = LineStyleKind::Normal;
 
-        if let Option::Some(val) = lst.get(&"label".to_string()) {
+        if let Option::Some(DotString::String(val)) =
+            lst.get(&"label".to_string())
+        {
             label = val.clone();
         }
 
-        if let Option::Some(stl) = lst.get(&"style".to_string()) {
+        if let Option::Some(DotString::String(stl)) =
+            lst.get(&"style".to_string())
+        {
             if stl == "dashed" {
                 line_style = LineStyleKind::Dashed;
             }
         }
 
-        if let Option::Some(x) = lst.get(&"color".to_string()) {
+        if let Option::Some(DotString::String(x)) =
+            lst.get(&"color".to_string())
+        {
             color = x.clone();
             color = Self::normalize_color(color);
         }
 
-        if let Option::Some(pw) = lst.get(&"penwidth".to_string()) {
+        if let Option::Some(DotString::String(pw)) =
+            lst.get(&"penwidth".to_string())
+        {
             if let Result::Ok(x) = pw.parse::<usize>() {
                 line_width = x;
             } else {
@@ -263,7 +275,9 @@ impl GraphBuilder {
             }
         }
 
-        if let Option::Some(fx) = lst.get(&"fontsize".to_string()) {
+        if let Option::Some(DotString::String(fx)) =
+            lst.get(&"fontsize".to_string())
+        {
             if let Result::Ok(x) = fx.parse::<usize>() {
                 font_size = x;
             } else {
@@ -294,22 +308,35 @@ impl GraphBuilder {
         lst: &PropertyList,
         default_name: &str,
     ) -> Element {
-        let mut label = default_name.to_string();
+        let mut label = ShapeContent::String(default_name.to_string());
         let mut edge_color = String::from("black");
         let mut fill_color = String::from("white");
         let mut font_size: usize = 14;
         let mut line_width: usize = 1;
         let mut make_xy_same = false;
         let mut rounded_corder_value = 0;
-
-        if let Option::Some(val) = lst.get(&"label".to_string()) {
-            label = val.clone();
-        }
-
+        // let mut shape = ShapeKind::Circle(label.clone());
         let mut shape = ShapeKind::Circle(label.clone());
 
+        if let Option::Some(x) = lst.get(&"label".to_string()) {
+            // label = val.clone();
+            match x {
+                DotString::String(val) => {
+                    label = ShapeContent::String(val.clone());
+                    shape =
+                        ShapeKind::Circle(ShapeContent::String(val.clone()));
+                }
+                DotString::HtmlString(val) => {
+                    label = ShapeContent::Html(parse_html_string(val).unwrap());
+                    shape = ShapeKind::None(label.clone());
+                }
+            }
+        }
+
         // Set the shape.
-        if let Option::Some(val) = lst.get(&"shape".to_string()) {
+        if let Option::Some(DotString::String(val)) =
+            lst.get(&"shape".to_string())
+        {
             match &val[..] {
                 "box" => {
                     shape = ShapeKind::Box(label);
@@ -320,33 +347,56 @@ impl GraphBuilder {
                     make_xy_same = true;
                 }
                 "record" => {
-                    shape = record_builder(&label);
+                    // shape = record_builder(&label);
+                    match label {
+                        ShapeContent::String(s) => {
+                            shape = record_builder(&s);
+                        }
+                        ShapeContent::Html(_) => {}
+                    }
                 }
                 "Mrecord" => {
                     rounded_corder_value = 15;
-                    shape = record_builder(&label);
+                    match label {
+                        ShapeContent::String(s) => {
+                            shape = record_builder(&s);
+                        }
+                        ShapeContent::Html(_) => {}
+                    }
                 }
-                _ => shape = ShapeKind::Circle(label),
+                "circle" => {
+                    shape = ShapeKind::Circle(label);
+                    make_xy_same = true;
+                }
+                _ => {}
             }
         }
 
-        if let Option::Some(x) = lst.get(&"color".to_string()) {
+        if let Option::Some(DotString::String(x)) =
+            lst.get(&"color".to_string())
+        {
             edge_color = x.clone();
             edge_color = Self::normalize_color(edge_color);
         }
 
-        if let Option::Some(style) = lst.get(&"style".to_string()) {
+        if let Option::Some(DotString::String(style)) =
+            lst.get(&"style".to_string())
+        {
             if style == "filled" && !lst.contains_key("fillcolor") {
                 fill_color = "lightgray".to_string();
             }
         }
 
-        if let Option::Some(x) = lst.get(&"fillcolor".to_string()) {
+        if let Option::Some(DotString::String(x)) =
+            lst.get(&"fillcolor".to_string())
+        {
             fill_color = x.clone();
             fill_color = Self::normalize_color(fill_color);
         }
 
-        if let Option::Some(fx) = lst.get(&"fontsize".to_string()) {
+        if let Option::Some(DotString::String(fx)) =
+            lst.get(&"fontsize".to_string())
+        {
             if let Result::Ok(x) = fx.parse::<usize>() {
                 font_size = x;
             } else {
@@ -355,7 +405,9 @@ impl GraphBuilder {
             }
         }
 
-        if let Option::Some(pw) = lst.get(&"width".to_string()) {
+        if let Option::Some(DotString::String(pw)) =
+            lst.get(&"width".to_string())
+        {
             if let Result::Ok(x) = pw.parse::<usize>() {
                 line_width = x;
             } else {
@@ -367,6 +419,24 @@ impl GraphBuilder {
         // We flip the orientation before we create the shape. In graphs that
         // grow top down the records grow to the left.
         let dir = dir.flip();
+
+        match &mut shape {
+            ShapeKind::Circle(ShapeContent::Html(HtmlGrid::FontTable(x))) => {
+                x.resize(font_size);
+            }
+            ShapeKind::Box(ShapeContent::Html(HtmlGrid::FontTable(x))) => {
+                x.resize(font_size);
+            }
+            ShapeKind::DoubleCircle(ShapeContent::Html(
+                HtmlGrid::FontTable(x),
+            )) => {
+                x.resize(font_size);
+            }
+            ShapeKind::None(ShapeContent::Html(HtmlGrid::FontTable(x))) => {
+                x.resize(font_size);
+            }
+            _ => {}
+        }
 
         let sz = get_shape_size(dir, &shape, font_size, make_xy_same);
         let look = StyleAttr::new(

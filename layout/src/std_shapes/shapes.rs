@@ -7,6 +7,7 @@ use crate::core::base::Orientation;
 use crate::core::format::Visible;
 use crate::core::geometry::{Point, Position};
 use crate::core::style::{LineStyleKind, StyleAttr};
+use crate::gv::html::HtmlGrid;
 use crate::std_shapes::render::get_shape_size;
 
 const PADDING: f64 = 60.;
@@ -16,6 +17,12 @@ const CONN_PADDING: f64 = 10.;
 pub enum LineEndKind {
     None,
     Arrow,
+}
+
+#[derive(Debug, Clone)]
+pub enum ShapeContent {
+    String(String),
+    Html(HtmlGrid),
 }
 
 #[derive(Debug, Clone)]
@@ -37,23 +44,23 @@ impl RecordDef {
 
 #[derive(Debug, Clone)]
 pub enum ShapeKind {
-    None,
-    Box(String),
-    Circle(String),
-    DoubleCircle(String),
+    None(ShapeContent),
+    Box(ShapeContent),
+    Circle(ShapeContent),
+    DoubleCircle(ShapeContent),
     Record(RecordDef),
-    Connector(Option<String>),
+    Connector(Option<ShapeContent>),
 }
 
 impl ShapeKind {
     pub fn new_box(s: &str) -> Self {
-        ShapeKind::Box(s.to_string())
+        ShapeKind::Box(ShapeContent::String(s.to_string()))
     }
     pub fn new_circle(s: &str) -> Self {
-        ShapeKind::Circle(s.to_string())
+        ShapeKind::Circle(ShapeContent::String(s.to_string()))
     }
     pub fn new_double_circle(s: &str) -> Self {
-        ShapeKind::DoubleCircle(s.to_string())
+        ShapeKind::DoubleCircle(ShapeContent::String(s.to_string()))
     }
     pub fn new_record(r: &RecordDef) -> Self {
         ShapeKind::Record(r.clone())
@@ -62,7 +69,7 @@ impl ShapeKind {
         if s.is_empty() {
             return ShapeKind::Connector(None);
         }
-        ShapeKind::Connector(Some(s.to_string()))
+        ShapeKind::Connector(Some(ShapeContent::String(s.to_string())))
     }
 }
 

@@ -1,0 +1,13 @@
+digraph structs {
+    node [shape=plaintext]
+    struct3 [label=<
+<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+  <TR>
+    <TD COLSPAN="1" ROWSPAN="2">1st col</TD>
+    <TD COLSPAN="1" ROWSPAN="2">2nd col</TD>
+  </TR>
+  <TR>
+      <TD COLSPAN="1" ROWSPAN="1" >3rd col</TD>
+  </TR>
+</TABLE>>];
+}

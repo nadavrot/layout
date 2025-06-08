@@ -1,8 +1,9 @@
 use super::ast;
 use super::lexer::Lexer;
 use super::lexer::Token;
+use crate::gv::parser::ast::DotString;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DotParser {
     lexer: Lexer,
     tok: Token,
@@ -37,6 +38,20 @@ impl DotParser {
             _ => {
                 // Lex the next token.
                 self.tok = self.lexer.next_token();
+            }
+        }
+    }
+    pub fn lex_html(&mut self) {
+        match self.tok {
+            Token::Error(_) => {
+                panic!("can't parse after error");
+            }
+            Token::EOF => {
+                panic!("can't parse after EOF");
+            }
+            _ => {
+                // Lex the next token.
+                self.tok = self.lexer.next_token_html();
             }
         }
     }
@@ -141,8 +156,17 @@ impl DotParser {
                         Result::Ok(ast::Stmt::Edge(es))
                     }
                     Token::Equal => {
-                        let es = self.parse_attribute_stmt(id0)?;
-                        Result::Ok(ast::Stmt::Attribute(es))
+                        if id0.port.is_some() {
+                            return to_error("Can't assign into a port");
+                        }
+                        self.lex();
+                        let es = self.parse_attr_id()?;
+                        let mut list = ast::AttributeList::new();
+                        list.add_attr(id0.name, es);
+                        Result::Ok(ast::Stmt::Attribute(ast::AttrStmt::new(
+                            ast::AttrStmtTarget::Graph,
+                            list,
+                        )))
                     }
                     Token::Identifier(_) => {
                         let ns = ast::NodeStmt::new(id0);
@@ -232,14 +256,8 @@ impl DotParser {
             } else {
                 return to_error("Expected '='");
             }
-
-            if let Token::Identifier(value) = self.tok.clone() {
-                lst.add_attr(&prop, &value);
-                // Consume the value name.
-                self.lex();
-            } else {
-                return to_error("Expected value after assignment");
-            }
+            let value = self.parse_attr_id()?;
+            lst.add_attr(prop, value);
 
             // Skip semicolon.
             if let Token::Semicolon = self.tok.clone() {
@@ -257,36 +275,46 @@ impl DotParser {
         }
         Result::Ok(lst)
     }
+    // Parses a string that is inside a HTML tag.
+    pub fn parse_html_string(&mut self) -> Result<String, String> {
+        self.lex_html();
+        if let Token::Identifier(s) = self.tok.clone() {
+            self.lex();
+            Ok(s)
+        } else {
+            to_error("Expected a string")
+        }
+    }
 
     fn is_edge_token(&self) -> bool {
         matches!(self.tok, Token::ArrowLine | Token::ArrowRight)
     }
 
     // ID '=' ID
-    pub fn parse_attribute_stmt(
-        &mut self,
-        id: ast::NodeId,
-    ) -> Result<ast::AttrStmt, String> {
-        let mut lst = ast::AttributeList::new();
-
-        if id.port.is_some() {
-            return to_error("Can't assign into a port");
-        }
-
-        if let Token::Equal = self.tok.clone() {
+    pub fn parse_attr_id(&mut self) -> Result<DotString, String> {
+        if let Token::HtmlStart = self.tok.clone() {
+            let html = self.parse_html_string()?;
+            if let Token::HtmlEnd = self.tok.clone() {
+                self.lex();
+            } else {
+                return to_error(
+                    format!("Expected '>', found {:?}", self.tok).as_str(),
+                );
+            }
+            Result::Ok(DotString::HtmlString(html))
+        } else if let Token::Identifier(value) = self.tok.clone() {
+            // Consume the value name.
             self.lex();
+            Result::Ok(DotString::String(value))
         } else {
-            return to_error("Expected '='");
+            to_error(
+                format!(
+                    "Expected value after assignment, found {:?}",
+                    self.tok
+                )
+                .as_str(),
+            )
         }
-
-        if let Token::Identifier(val) = self.tok.clone() {
-            lst.add_attr(&id.name, &val);
-            self.lex();
-        } else {
-            return to_error("Expected identifier.");
-        }
-
-        Result::Ok(ast::AttrStmt::new(ast::AttrStmtTarget::Graph, lst))
     }
 
     //edge_stmt : (node_id | subgraph) edgeRHS [ attr_list ]
