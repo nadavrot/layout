@@ -420,13 +420,6 @@ impl GraphBuilder {
         // grow top down the records grow to the left.
         let dir = dir.flip();
 
-        // match &mut shape {
-        //     ShapeKind::Html(HtmlGrid::FontTable(x)) => {
-        //         x.resize(font_size);
-        //     }
-
-        //     _ => {}
-        // }
         match &mut shape {
             ShapeKind::Circle(ShapeContent::Html(HtmlGrid::FontTable(x))) => {
                 x.resize(font_size);
