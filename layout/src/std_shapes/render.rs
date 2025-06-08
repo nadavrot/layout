@@ -43,6 +43,13 @@ fn get_record_size(
 const BOX_SHAPE_PADDING: f64 = 10.;
 const CIRCLE_SHAPE_PADDING: f64 = 20.;
 
+fn get_size_for_content(content: &ShapeContent, font: usize) -> Point {
+    match content {
+        ShapeContent::String(s) => get_size_for_str(s, font),
+        ShapeContent::Html(html) => html.size(font),
+    }
+}
+
 /// Return the size of the shape. If \p make_xy_same is set then make the
 /// X and the Y of the shape the same. This will turn ellipses into circles and
 /// rectangles into boxes. The parameter \p dir specifies the direction of the
@@ -54,29 +61,31 @@ pub fn get_shape_size(
     make_xy_same: bool,
 ) -> Point {
     let mut res = match s {
-        ShapeKind::Box(text) => {
-            pad_shape_scalar(get_size_for_str(text, font), BOX_SHAPE_PADDING)
-        }
-        ShapeKind::Circle(text) => {
-            pad_shape_scalar(get_size_for_str(text, font), CIRCLE_SHAPE_PADDING)
-        }
-        ShapeKind::DoubleCircle(text) => {
-            pad_shape_scalar(get_size_for_str(text, font), CIRCLE_SHAPE_PADDING)
-        }
+        ShapeKind::Box(text) => pad_shape_scalar(
+            get_size_for_content(text, font),
+            BOX_SHAPE_PADDING,
+        ),
+        ShapeKind::Circle(text) => pad_shape_scalar(
+            get_size_for_content(text, font),
+            CIRCLE_SHAPE_PADDING,
+        ),
+        ShapeKind::DoubleCircle(text) => pad_shape_scalar(
+            get_size_for_content(text, font),
+            CIRCLE_SHAPE_PADDING,
+        ),
         ShapeKind::Record(sr) => {
             pad_shape_scalar(get_record_size(sr, dir, font), BOX_SHAPE_PADDING)
         }
         ShapeKind::Connector(text) => {
             if let Option::Some(text) = text {
                 pad_shape_scalar(
-                    get_size_for_str(text, font),
+                    get_size_for_content(text, font),
                     BOX_SHAPE_PADDING,
                 )
             } else {
                 Point::new(1., 1.)
             }
         }
-        ShapeKind::Html(html_grid) => html_grid.size(font),
         ShapeKind::None => Point::new(1., 1.),
     };
     if make_xy_same {
@@ -526,6 +535,23 @@ fn visit_record(
     }
 }
 
+fn draw_shape_content(
+    content: &ShapeContent,
+    loc: Point,
+    size: Point,
+    look: &StyleAttr,
+    canvas: &mut dyn RenderBackend,
+) {
+    match content {
+        ShapeContent::String(text) => {
+            canvas.draw_text(loc, text.as_str(), look);
+        }
+        ShapeContent::Html(html) => {
+            render_html(html, loc, size, look, canvas);
+        }
+    }
+}
+
 impl Renderable for Element {
     fn render(&self, debug: bool, canvas: &mut dyn RenderBackend) {
         if debug {
@@ -553,13 +579,6 @@ impl Renderable for Element {
                     canvas,
                 );
             }
-            ShapeKind::Html(rec) => render_html(
-                rec,
-                self.pos.center(),
-                self.pos.size(false),
-                &self.look,
-                canvas,
-            ),
             ShapeKind::Box(text) => {
                 canvas.draw_rect(
                     self.pos.bbox(false).0,
@@ -568,7 +587,13 @@ impl Renderable for Element {
                     self.properties.clone(),
                     Option::None,
                 );
-                canvas.draw_text(self.pos.center(), text.as_str(), &self.look);
+                draw_shape_content(
+                    text,
+                    self.pos.center(),
+                    self.pos.size(false),
+                    &self.look,
+                    canvas,
+                );
             }
             ShapeKind::Circle(text) => {
                 canvas.draw_circle(
@@ -577,7 +602,14 @@ impl Renderable for Element {
                     &self.look,
                     self.properties.clone(),
                 );
-                canvas.draw_text(self.pos.center(), text.as_str(), &self.look);
+                // canvas.draw_text(self.pos.center(), text.as_str(), &self.look);
+                draw_shape_content(
+                    text,
+                    self.pos.center(),
+                    self.pos.size(false),
+                    &self.look,
+                    canvas,
+                );
             }
             ShapeKind::DoubleCircle(text) => {
                 canvas.draw_circle(
@@ -597,7 +629,13 @@ impl Renderable for Element {
                     &outer_circle_style,
                     None,
                 );
-                canvas.draw_text(self.pos.center(), text.as_str(), &self.look);
+                draw_shape_content(
+                    text,
+                    self.pos.center(),
+                    self.pos.size(false),
+                    &self.look,
+                    canvas,
+                );
             }
             ShapeKind::Connector(label) => {
                 if debug {
@@ -618,7 +656,14 @@ impl Renderable for Element {
                     );
                 }
                 if let Option::Some(label) = label {
-                    canvas.draw_text(self.pos.middle(), label, &self.look);
+                    // canvas.draw_text(self.pos.middle(), label, &self.look);
+                    draw_shape_content(
+                        label,
+                        self.pos.middle(),
+                        self.pos.size(false),
+                        &self.look,
+                        canvas,
+                    );
                 }
             }
         }
@@ -659,36 +704,92 @@ impl Renderable for Element {
 
                 get_connection_point_for_box(loc, size, from, force)
             }
-            ShapeKind::Box(_) => {
+            ShapeKind::Box(x) => {
                 let loc = self.pos.center();
                 let size = self.pos.size(false);
-                get_connection_point_for_box(loc, size, from, force)
-            }
-            ShapeKind::Circle(_) => {
-                let loc = self.pos.center();
-                let size = self.pos.size(false);
-                get_connection_point_for_circle(loc, size, from, force)
-            }
-            ShapeKind::DoubleCircle(_) => {
-                let loc = self.pos.center();
-                let size = self.pos.size(false);
-                get_connection_point_for_circle(loc, size, from, force)
-            }
-            ShapeKind::Html(html) => {
-                let mut loc = self.pos.center();
-                let mut size = self.pos.size(false);
-                if let Some(port_name) = port {
-                    let mut visitor = Locator {
-                        port_name: port_name.to_string(),
-                        loc,
-                        size,
-                    };
-                    let r =
-                        get_html_port_location(html, loc, size, &mut visitor);
-                    loc = r.0;
-                    size = r.1;
+                // get_connection_point_for_box(loc, size, from, force)
+                match x {
+                    ShapeContent::String(_) => {
+                        get_connection_point_for_box(loc, size, from, force)
+                    }
+                    ShapeContent::Html(html) => {
+                        let mut loc = self.pos.center();
+                        let mut size = self.pos.size(false);
+                        if let Option::Some(port_name) = port {
+                            let r = get_html_port_location(
+                                html,
+                                loc,
+                                size,
+                                &mut Locator {
+                                    port_name: port_name.to_string(),
+                                    loc,
+                                    size,
+                                },
+                            );
+                            loc = r.0;
+                            size = r.1;
+                        }
+                        get_connection_point_for_box(loc, size, from, force)
+                    }
                 }
-                get_connection_point_for_box(loc, size, from, force)
+            }
+            ShapeKind::Circle(x) => {
+                let loc = self.pos.center();
+                let size = self.pos.size(false);
+                // get_connection_point_for_circle(loc, size, from, force)
+                match x {
+                    ShapeContent::String(_) => {
+                        get_connection_point_for_circle(loc, size, from, force)
+                    }
+                    ShapeContent::Html(html) => {
+                        let mut loc = self.pos.center();
+                        let mut size = self.pos.size(false);
+                        if let Option::Some(port_name) = port {
+                            let r = get_html_port_location(
+                                html,
+                                loc,
+                                size,
+                                &mut Locator {
+                                    port_name: port_name.to_string(),
+                                    loc,
+                                    size,
+                                },
+                            );
+                            loc = r.0;
+                            size = r.1;
+                        }
+                        get_connection_point_for_circle(loc, size, from, force)
+                    }
+                }
+            }
+            ShapeKind::DoubleCircle(x) => {
+                let loc = self.pos.center();
+                let size = self.pos.size(false);
+                // get_connection_point_for_circle(loc, size, from, force)
+                match x {
+                    ShapeContent::String(_) => {
+                        get_connection_point_for_circle(loc, size, from, force)
+                    }
+                    ShapeContent::Html(html) => {
+                        let mut loc = self.pos.center();
+                        let mut size = self.pos.size(false);
+                        if let Option::Some(port_name) = port {
+                            let r = get_html_port_location(
+                                html,
+                                loc,
+                                size,
+                                &mut Locator {
+                                    port_name: port_name.to_string(),
+                                    loc,
+                                    size,
+                                },
+                            );
+                            loc = r.0;
+                            size = r.1;
+                        }
+                        get_connection_point_for_circle(loc, size, from, force)
+                    }
+                }
             }
             _ => {
                 unreachable!();

@@ -308,25 +308,27 @@ impl GraphBuilder {
         lst: &PropertyList,
         default_name: &str,
     ) -> Element {
-        let mut label = default_name.to_string();
+        let mut label = ShapeContent::String(default_name.to_string());
         let mut edge_color = String::from("black");
         let mut fill_color = String::from("white");
         let mut font_size: usize = 14;
         let mut line_width: usize = 1;
         let mut make_xy_same = false;
         let mut rounded_corder_value = 0;
+        // let mut shape = ShapeKind::Circle(label.clone());
         let mut shape = ShapeKind::Circle(label.clone());
 
         if let Option::Some(x) = lst.get(&"label".to_string()) {
             // label = val.clone();
             match x {
                 DotString::String(val) => {
-                    label = val.clone();
-                    shape = ShapeKind::Circle(label.clone());
+                    label = ShapeContent::String(val.clone());
+                    shape =
+                        ShapeKind::Circle(ShapeContent::String(val.clone()));
                 }
                 DotString::HtmlString(val) => {
-                    label = val.clone();
-                    shape = ShapeKind::Html(parse_html_string(val).unwrap());
+                    label = ShapeContent::Html(parse_html_string(val).unwrap());
+                    shape = ShapeKind::Circle(label.clone());
                 }
             }
         }
@@ -345,11 +347,22 @@ impl GraphBuilder {
                     make_xy_same = true;
                 }
                 "record" => {
-                    shape = record_builder(&label);
+                    // shape = record_builder(&label);
+                    match label {
+                        ShapeContent::String(s) => {
+                            shape = record_builder(&s);
+                        }
+                        ShapeContent::Html(_) => {}
+                    }
                 }
                 "Mrecord" => {
                     rounded_corder_value = 15;
-                    shape = record_builder(&label);
+                    match label {
+                        ShapeContent::String(s) => {
+                            shape = record_builder(&s);
+                        }
+                        ShapeContent::Html(_) => {}
+                    }
                 }
                 _ => {}
             }
@@ -403,11 +416,25 @@ impl GraphBuilder {
         // grow top down the records grow to the left.
         let dir = dir.flip();
 
+        // match &mut shape {
+        //     ShapeKind::Html(HtmlGrid::FontTable(x)) => {
+        //         x.resize(font_size);
+        //     }
+
+        //     _ => {}
+        // }
         match &mut shape {
-            ShapeKind::Html(HtmlGrid::FontTable(x)) => {
+            ShapeKind::Circle(ShapeContent::Html(HtmlGrid::FontTable(x))) => {
                 x.resize(font_size);
             }
-
+            ShapeKind::Box(ShapeContent::Html(HtmlGrid::FontTable(x))) => {
+                x.resize(font_size);
+            }
+            ShapeKind::DoubleCircle(ShapeContent::Html(
+                HtmlGrid::FontTable(x),
+            )) => {
+                x.resize(font_size);
+            }
             _ => {}
         }
 
