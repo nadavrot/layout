@@ -1,0 +1,5 @@
+digraph test2 {
+    a -> b;
+    subgraph cluster_empty {}
+    b -> c;
+}

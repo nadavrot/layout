@@ -69,10 +69,20 @@ fn simple_graph() {
     use layout::std_shapes::shapes::*;
     use layout::topo::layout::VisualGraph;
     use layout::topo::placer::Placer;
+    use layout::core::color::Color;
     use std::fs;
+    use layout::adt::dag::SubgraphHandle;
 
     // Create a new graph:
-    let mut vg = VisualGraph::new(Orientation::LeftToRight);
+    let mut vg = VisualGraph::new(
+        Orientation::LeftToRight,
+        Element::create(
+            ShapeKind::Frame(Some("Main Graph".to_string())),
+            StyleAttr::new(Color::transparent(), 0, None, 0, 0),
+            Orientation::LeftToRight,
+            Point::zero(),
+        ),
+    );
 
     // Define the node styles:
     let sp0 = ShapeKind::new_box("one");
@@ -85,8 +95,9 @@ fn simple_graph() {
     let node1 = Element::create(sp1, look1, Orientation::LeftToRight, sz);
 
     // Add the nodes to the graph, and save a handle to each node.
-    let handle0 = vg.add_node(node0);
-    let handle1 = vg.add_node(node1);
+    let main_subgraph_handle = SubgraphHandle::new(0);
+    let handle0 = vg.add_node(node0, main_subgraph_handle);
+    let handle1 = vg.add_node(node1, main_subgraph_handle);
 
     // Add an edge between the nodes.
     let arrow = Arrow::simple("123");

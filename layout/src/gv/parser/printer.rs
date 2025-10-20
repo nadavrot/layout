@@ -71,7 +71,7 @@ fn print_stmt(stmt: &ast::Stmt, indent: usize) {
         ast::Stmt::Attribute(a) => {
             print_att(a, indent);
         }
-        ast::Stmt::SubGraph(g) => {
+        ast::Stmt::Subgraph(g) => {
             print_graph(g, indent);
         }
     }
@@ -79,7 +79,7 @@ fn print_stmt(stmt: &ast::Stmt, indent: usize) {
 
 fn print_graph(graph: &ast::Graph, indent: usize) {
     print!("{}", " ".repeat(indent));
-    println!("Graph: {}", graph.name);
+    println!("Graph: {:?}", graph.name);
     for stmt in &graph.list.list {
         print_stmt(stmt, indent + 1);
     }

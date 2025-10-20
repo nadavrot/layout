@@ -1,0 +1,5 @@
+digraph test1 {
+    a -> b;
+    subgraph {}
+    b -> c;
+}

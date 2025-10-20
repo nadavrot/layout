@@ -1,0 +1,212 @@
+digraph ComplexSystem {
+    // Global graph settings
+    graph [fontname="Helvetica" fontsize=12 compound=true shape=circle];
+    node [fontname="Helvetica" fontsize=10 shape=box style=filled];
+    edge [fontname="Helvetica" fontsize=9];
+    
+    // Main title
+    labelloc=t;
+    fontsize=16;
+    
+    // Frontend Layer
+    subgraph cluster_frontend {
+        style=filled;
+        color=lightblue;
+        fillcolor="#e6f3ff";
+
+        // Web Application cluster
+        subgraph cluster_web {
+            label="Web Application";
+            style=filled;
+            fillcolor="#cce5ff";
+            
+            subgraph cluster_ui {
+                label="UI Components";
+                style=filled;
+                fillcolor="#b3d9ff";
+                
+                ui_login [label="Login\nComponent" fillcolor="#99ccff"];
+                ui_dashboard [label="Dashboard\nComponent" fillcolor="#99ccff"];
+                ui_reports [label="Reports\nComponent" fillcolor="#99ccff"];
+            }
+            
+            subgraph cluster_state {
+                label="State Management";
+                style=filled;
+                fillcolor="#b3d9ff";
+                
+                state_store [label="Redux Store" fillcolor="#99ccff"];
+                state_actions [label="Actions" fillcolor="#99ccff"];
+                state_reducers [label="Reducers" fillcolor="#99ccff"];
+            }
+        }
+        
+        // Mobile Application cluster
+        subgraph cluster_mobile {
+            label="Mobile Application";
+            style=filled;
+            fillcolor="#cce5ff";
+            
+            mobile_ios [label="iOS App" fillcolor="#99ccff"];
+            mobile_android [label="Android App" fillcolor="#99ccff"];
+            mobile_shared [label="Shared Logic" fillcolor="#99ccff"];
+        }
+    }
+    
+    // Backend Layer
+    subgraph cluster_backend {
+        label="Backend Layer";
+        style=filled;
+        color=lightcoral;
+        fillcolor="#ffe6e6";
+        
+        // API Gateway
+        subgraph cluster_gateway {
+            label="API Gateway";
+            style=filled;
+            fillcolor="#ffcccc";
+            
+            gw_auth [label="Authentication" fillcolor="#ffb3b3"];
+            gw_routing [label="Request Routing" fillcolor="#ffb3b3"];
+            gw_ratelimit [label="Rate Limiting" fillcolor="#ffb3b3"];
+        }
+
+        gw_auth -> A -> B
+        
+        // Microservices
+        subgraph cluster_services {
+            label="Microservices";
+            style=filled;
+            fillcolor="#ffcccc";
+            
+            subgraph cluster_user_service {
+                label="User Service";
+                style=filled;
+                fillcolor="#ffb3b3";
+                
+                user_api [label="User API" fillcolor="#ff9999"];
+                user_logic [label="Business Logic" fillcolor="#ff9999"];
+                user_validation [label="Validation" fillcolor="#ff9999"];
+            }
+            
+            subgraph cluster_order_service {
+                label="Order Service";
+                style=filled;
+                fillcolor="#ffb3b3";
+                
+                order_api [label="Order API" fillcolor="#ff9999"];
+                order_logic [label="Business Logic" fillcolor="#ff9999"];
+                order_payment [label="Payment Handler" fillcolor="#ff9999"];
+            }
+            
+            subgraph cluster_inventory_service {
+                label="Inventory Service";
+                style=filled;
+                fillcolor="#ffb3b3";
+                
+                inv_api [label="Inventory API" fillcolor="#ff9999"];
+                inv_logic [label="Stock Management" fillcolor="#ff9999"];
+                inv_alerts [label="Alert System" fillcolor="#ff9999"];
+            }
+        }
+    }
+    
+    // Data Layer
+    subgraph cluster_data {
+        label="Data Layer";
+        style=filled;
+        color=lightgreen;
+        fillcolor="#e6ffe6";
+        
+        subgraph cluster_databases {
+            label="Databases";
+            style=filled;
+            fillcolor="#ccffcc";
+            
+            db_users [label="Users DB\n(PostgreSQL)" shape=cylinder fillcolor="#b3ffb3"];
+            db_orders [label="Orders DB\n(PostgreSQL)" shape=cylinder fillcolor="#b3ffb3"];
+            db_inventory [label="Inventory DB\n(MongoDB)" shape=cylinder fillcolor="#b3ffb3"];
+        }
+        
+        subgraph cluster_cache {
+            label="Cache Layer";
+            style=filled;
+            fillcolor="#ccffcc";
+            
+            cache_redis [label="Redis Cache" shape=cylinder fillcolor="#b3ffb3"];
+            cache_sessions [label="Session Store" shape=cylinder fillcolor="#b3ffb3"];
+        }
+        
+        subgraph cluster_messaging {
+            label="Message Queue";
+            style=filled;
+            fillcolor="#ccffcc";
+            
+            mq_events [label="Event Bus\n(RabbitMQ)" shape=parallelogram fillcolor="#b3ffb3"];
+            mq_jobs [label="Job Queue" shape=parallelogram fillcolor="#b3ffb3"];
+        }
+    }
+    
+    // External Services
+    subgraph cluster_external {
+        label="External Services";
+        style=filled;
+        color=lightyellow;
+        fillcolor="#fffacd";
+        
+        ext_payment [label="Payment Gateway" fillcolor="#ffec8b"];
+        ext_email [label="Email Service" fillcolor="#ffec8b"];
+        ext_analytics [label="Analytics" fillcolor="#ffec8b"];
+    }
+    
+    // Frontend connections
+    ui_login -> state_actions;
+    ui_dashboard -> state_store;
+    ui_reports -> state_store;
+    state_actions -> state_reducers;
+    state_reducers -> state_store;
+    
+    mobile_ios -> mobile_shared;
+    mobile_android -> mobile_shared;
+    
+    // Frontend to Gateway connections (using compound for cluster edges)
+    state_store -> gw_routing [ltail=cluster_web lhead=cluster_gateway label="HTTPS"];
+    mobile_shared -> gw_routing [ltail=cluster_mobile lhead=cluster_gateway label="HTTPS"];
+    
+    // Gateway to Services
+    gw_auth -> user_api [lhead=cluster_user_service];
+    gw_routing -> order_api [lhead=cluster_order_service];
+    gw_routing -> inv_api [lhead=cluster_inventory_service];
+    gw_ratelimit -> gw_routing;
+    
+    // Service internal flows
+    user_api -> user_logic -> user_validation;
+    order_api -> order_logic -> order_payment;
+    inv_api -> inv_logic -> inv_alerts;
+    
+    // Services to Data Layer
+    user_logic -> db_users;
+    order_logic -> db_orders;
+    inv_logic -> db_inventory;
+    
+    user_logic -> cache_redis [label="cache"];
+    order_logic -> cache_sessions [label="session"];
+    
+    // Messaging connections
+    order_logic -> mq_events [label="publish\nevents"];
+    inv_logic -> mq_events [label="subscribe"];
+    order_payment -> mq_jobs [label="async jobs"];
+    
+    // Service to External
+    order_payment -> ext_payment [label="process\npayment"];
+    user_logic -> ext_email [label="notifications"];
+    gw_routing -> ext_analytics [ltail=cluster_gateway label="metrics"];
+    
+    // Cross-service communication
+    order_logic -> inv_api [label="check stock" style=dashed color=blue];
+    inv_logic -> order_api [label="update status" style=dashed color=blue];
+    
+    db_orders -> cache_redis
+    
+    
+}

@@ -66,5 +66,6 @@ impl<'a> Placer<'a> {
         if need_transpose {
             self.vg.transpose();
         }
+        simple::adjust_subgraph_borders(self.vg);
     }
 }

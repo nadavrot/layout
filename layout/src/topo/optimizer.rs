@@ -70,7 +70,9 @@ impl<'a> EdgeCrossOptimizer<'a> {
     pub fn rotate_rank(&mut self) {
         for i in 0..self.dag.num_levels() {
             let row = self.dag.row_mut(i);
-            row.rotate_left(1);
+            if row.len() >= 1 {
+                row.rotate_left(1);
+            }
         }
     }
 
@@ -224,7 +226,11 @@ impl<'a> RankOptimizer<'a> {
         Self { dag }
     }
 
-    pub fn try_to_sink_node(&mut self, node: NodeHandle) -> bool {
+    pub fn try_to_sink_node(
+        &mut self,
+        node: NodeHandle,
+        max_level: usize,
+    ) -> bool {
         let backs = self.dag.predecessors(node);
         let fwds = self.dag.successors(node);
 
@@ -241,10 +247,14 @@ impl<'a> RankOptimizer<'a> {
             highest_next = highest_next.min(next_rank);
         }
 
+        if highest_next == 0 {
+            return false;
+        }
+        let target_rank = (highest_next - 1).min(max_level);
+
         // We found an opportunity to sink a node.
-        if highest_next > curr_rank + 1 {
-            self.dag
-                .update_node_rank_level(node, highest_next - 1, None);
+        if target_rank > curr_rank {
+            self.dag.update_node_rank_level(node, target_rank, None);
             return true;
         }
         false
@@ -261,10 +271,14 @@ impl<'a> RankOptimizer<'a> {
         #[cfg(feature = "log")]
         let mut iter = 0;
 
+        let subgraph_levels = self.dag.get_subgraph_levels();
+
         loop {
             let mut c = 0;
             for node in self.dag.iter() {
-                if self.try_to_sink_node(node) {
+                let (_, max_lvl) = subgraph_levels
+                    [self.dag.get_parent_subgraph_index_n(node).get_index()];
+                if self.try_to_sink_node(node, max_lvl) {
                     c += 1;
                 }
             }

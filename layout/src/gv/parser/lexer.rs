@@ -125,7 +125,8 @@ impl Lexer {
             while self.has_next() {
                 changed = true;
                 self.read_char();
-                if self.ch.is_ascii_control() {
+                // horizontal tab is allowed in comments and not ascii control
+                if self.ch.is_ascii_control() && self.ch != '\t' {
                     self.read_char();
                     return changed;
                 }

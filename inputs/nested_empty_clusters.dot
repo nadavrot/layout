@@ -1,0 +1,13 @@
+digraph test6 {
+    a -> b;
+    subgraph cluster_level1 {
+        subgraph cluster_level2 {
+            subgraph cluster_level3 {
+                subgraph cluster_level4 {
+                    subgraph cluster_level5 {}
+                }
+            }
+        }
+    }
+    b -> c;
+}

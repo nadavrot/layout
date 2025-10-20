@@ -1,0 +1,28 @@
+digraph G {
+  subgraph cluster_0 {
+    B -> I -> P
+    B -> K -> S
+    A
+    C
+  }
+
+  subgraph cluster_1 {
+    E -> H -> T
+    M
+  }
+  
+   subgraph cluster_2 {
+    D
+    G -> J
+    N Q
+  }
+  A -> L -> U
+  K -> O
+  N -> T
+  D -> M -> Q
+  F -> N
+  J -> R
+  C -> H
+
+
+}

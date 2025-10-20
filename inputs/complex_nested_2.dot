@@ -1,0 +1,343 @@
+digraph ComprehensiveTest {
+    // Global graph attributes
+    label="Comprehensive Nested Subgraph Test\nTesting Multiple Layout Engines";
+    labelloc=t;
+    fontsize=20;
+    fontname="Arial Bold";
+    compound=true;
+    newrank=true;
+    ranksep=1.5;
+    nodesep=0.8;
+    
+    // Default node and edge styles
+    node [shape=box, style="rounded,filled", fillcolor=lightblue, fontname="Arial"];
+    edge [fontname="Arial", fontsize=10];
+    
+    // Root level nodes
+    start [label="Start", shape=circle, fillcolor=lightgreen, width=1.5];
+    end [label="End", shape=doublecircle, fillcolor=lightcoral, width=1.5];
+    
+    // ========== CLUSTER 1: System Architecture ==========
+    subgraph cluster_system {
+        label="System Architecture";
+        style=filled;
+        fillcolor=lightyellow;
+        penwidth=2;
+        
+        // Frontend subcluster
+        subgraph cluster_frontend {
+            label="Frontend Layer";
+            style="filled,dashed";
+            fillcolor=lightcyan;
+            
+            ui1 [label="UI Component 1"];
+            ui2 [label="UI Component 2"];
+            ui3 [label="UI Component 3"];
+            
+            // Nested service layer
+            subgraph cluster_frontend_services {
+                label="Frontend Services";
+                fillcolor=white;
+                
+                fs1 [label="Auth Service"];
+                fs2 [label="State Manager"];
+                fs3 [label="API Client"];
+                
+                fs1 -> fs2 [label="updates"];
+                fs2 -> fs3 [label="requests"];
+            }
+            
+            ui1 -> fs1;
+            ui2 -> fs2;
+            ui3 -> fs3;
+        }
+        
+        // Backend subcluster
+        subgraph cluster_backend {
+            label="Backend Layer";
+            style="filled,dashed";
+            fillcolor=lightpink;
+            
+            api1 [label="REST API"];
+            api2 [label="GraphQL API"];
+            
+            // Nested business logic
+            subgraph cluster_business_logic {
+                label="Business Logic";
+                fillcolor=white;
+                
+                bl1 [label="User Service"];
+                bl2 [label="Order Service"];
+                bl3 [label="Payment Service"];
+                
+                // Deeply nested validation layer
+                subgraph cluster_validation {
+                    label="Validation Layer";
+                    fillcolor=lavender;
+                    style=dotted;
+                    
+                    v1 [label="Input Validator"];
+                    v2 [label="Business Rules"];
+                    v3 [label="Security Check"];
+                    
+                    v1 -> v2 -> v3;
+                }
+                
+                bl1 -> v1 [lhead=cluster_validation];
+                bl2 -> v1 [lhead=cluster_validation];
+                bl3 -> v1 [lhead=cluster_validation];
+            }
+            
+            api1 -> bl1;
+            api1 -> bl2;
+            api2 -> bl2;
+            api2 -> bl3;
+        }
+        
+        // Cross-cluster edges
+        fs3 -> api1 [ltail=cluster_frontend_services, lhead=cluster_backend, label="HTTP", color=blue, penwidth=2];
+    }
+    
+    // ========== CLUSTER 2: Data Layer ==========
+    subgraph cluster_data {
+        label="Data Layer";
+        style=filled;
+        fillcolor=lightgreen;
+        penwidth=2;
+        
+        subgraph cluster_databases {
+            label="Databases";
+            fillcolor=white;
+            
+            db1 [label="PostgreSQL", shape=cylinder];
+            db2 [label="MongoDB", shape=cylinder];
+            db3 [label="Redis Cache", shape=cylinder, fillcolor=orange];
+        }
+        
+        subgraph cluster_storage {
+            label="Storage Systems";
+            fillcolor=white;
+            
+            s1 [label="Object Storage"];
+            s2 [label="File System"];
+            
+            subgraph cluster_backup {
+                label="Backup Systems";
+                fillcolor=lightgray;
+                
+                bk1 [label="Primary Backup"];
+                bk2 [label="Disaster Recovery"];
+                bk3 [label="Archive"];
+                
+                bk1 -> bk2 [label="replicate", style=dashed];
+                bk2 -> bk3 [label="archive", style=dashed];
+            }
+            
+            s1 -> bk1 [lhead=cluster_backup];
+            s2 -> bk1 [lhead=cluster_backup];
+        }
+    }
+    
+    // ========== CLUSTER 3: External Services ==========
+    subgraph cluster_external {
+        label="External Services";
+        style=filled;
+        fillcolor=mistyrose;
+        penwidth=2;
+        
+        subgraph cluster_payment_providers {
+            label="Payment Providers";
+            fillcolor=white;
+            
+            pp1 [label="Stripe", shape=component];
+            pp2 [label="PayPal", shape=component];
+        }
+        
+        subgraph cluster_messaging {
+            label="Messaging Services";
+            fillcolor=white;
+            
+            msg1 [label="Email Service"];
+            msg2 [label="SMS Service"];
+            msg3 [label="Push Notifications"];
+            
+            subgraph cluster_templates {
+                label="Template Engine";
+                fillcolor=lavender;
+                
+                t1 [label="Email Templates"];
+                t2 [label="SMS Templates"];
+                
+                t1 -> msg1 [dir=back];
+                t2 -> msg2 [dir=back];
+            }
+        }
+        
+        subgraph cluster_analytics {
+            label="Analytics & Monitoring";
+            fillcolor=white;
+            
+            an1 [label="Google Analytics"];
+            an2 [label="Mixpanel"];
+            an3 [label="Sentry"];
+        }
+    }
+    
+    // ========== CLUSTER 4: Infrastructure ==========
+    subgraph cluster_infrastructure {
+        label="Infrastructure Layer";
+        style=filled;
+        fillcolor=lightsteelblue;
+        penwidth=2;
+        
+        subgraph cluster_compute {
+            label="Compute Resources";
+            fillcolor=white;
+            
+            c1 [label="Load Balancer", shape=hexagon];
+            
+            subgraph cluster_app_servers {
+                label="Application Servers";
+                fillcolor=azure;
+                
+                as1 [label="App Server 1"];
+                as2 [label="App Server 2"];
+                as3 [label="App Server 3"];
+                
+                // Internal load distribution
+                {rank=same; as1; as2; as3}
+            }
+            
+            c1 -> as1;
+            c1 -> as2;
+            c1 -> as3;
+        }
+        
+        subgraph cluster_network {
+            label="Network & Security";
+            fillcolor=white;
+            
+            fw [label="Firewall", shape=octagon, fillcolor=red, fontcolor=white];
+            cdn [label="CDN", shape=hexagon];
+            
+            subgraph cluster_security {
+                label="Security Services";
+                fillcolor=mistyrose;
+                
+                waf [label="WAF"];
+                ids [label="IDS/IPS"];
+                ssl [label="SSL/TLS"];
+                
+                waf -> ids -> ssl;
+            }
+            
+            fw -> waf [lhead=cluster_security];
+        }
+    }
+    
+    // ========== CLUSTER 5: DevOps Pipeline ==========
+    subgraph cluster_devops {
+        label="CI/CD Pipeline";
+        style=filled;
+        fillcolor=honeydew;
+        penwidth=2;
+        
+        subgraph cluster_source {
+            label="Source Control";
+            fillcolor=white;
+            
+            git [label="Git Repository", shape=folder];
+        }
+        
+        subgraph cluster_ci {
+            label="Continuous Integration";
+            fillcolor=white;
+            
+            build [label="Build"];
+            test [label="Test"];
+            scan [label="Security Scan"];
+            
+            subgraph cluster_tests {
+                label="Test Suites";
+                fillcolor=lightblue;
+                
+                ut [label="Unit Tests"];
+                it [label="Integration Tests"];
+                e2e [label="E2E Tests"];
+                
+                ut -> it -> e2e;
+            }
+            
+            build -> test;
+            test -> ut [lhead=cluster_tests];
+            test -> scan;
+        }
+        
+        subgraph cluster_cd {
+            label="Continuous Deployment";
+            fillcolor=white;
+            
+            staging [label="Staging"];
+            prod [label="Production"];
+            
+            subgraph cluster_deployment {
+                label="Deployment Strategies";
+                fillcolor=lightgreen;
+                
+                blue [label="Blue/Green"];
+                canary [label="Canary"];
+                rolling [label="Rolling"];
+                
+                {rank=same; blue; canary; rolling}
+            }
+            
+            staging -> prod;
+            staging -> blue [lhead=cluster_deployment];
+        }
+        
+        git -> build [lhead=cluster_ci];
+        scan -> staging [ltail=cluster_ci, lhead=cluster_cd];
+    }
+    
+    // ========== Complex Cross-Cluster Connections ==========
+    
+    // Start to system
+    start -> ui1 [lhead=cluster_system, label="user input", color=green, penwidth=2];
+    
+    // System to data
+    bl1 -> db1 [ltail=cluster_business_logic, lhead=cluster_data, label="CRUD ops", color=purple];
+    bl2 -> db2 [ltail=cluster_business_logic, lhead=cluster_databases];
+    
+    // System to external services
+    bl3 -> pp1 [ltail=cluster_backend, lhead=cluster_payment_providers, label="payment", color=gold, penwidth=2];
+    v3 -> an3 [ltail=cluster_validation, lhead=cluster_analytics, label="logs", style=dotted];
+    
+    // Infrastructure connections
+    c1 -> fs3 [ltail=cluster_infrastructure, lhead=cluster_frontend, label="serve", color=blue];
+    fw -> c1 [lhead=cluster_compute, label="traffic"];
+    
+    // DevOps to infrastructure
+    prod -> as1 [ltail=cluster_cd, lhead=cluster_app_servers, label="deploy", color=green, style=bold];
+    
+    // Monitoring connections
+    as2 -> an3 [ltail=cluster_app_servers, label="metrics", style=dashed, color=gray];
+    
+    // Storage to backup
+    db1 -> bk1 [lhead=cluster_backup, label="backup", style=dotted];
+    
+    // End connections
+    bl3 -> end [label="complete", color=red, penwidth=2];
+    
+    // Bidirectional edges
+    db3 -> bl1 [dir=both, label="cache", color=orange];
+    
+    // Self-referencing edge
+    api2 -> api2 [label="retry"];
+    
+    // ========== Rank constraints for better layout ==========
+    {rank=source; start}
+    {rank=sink; end}
+    
+    // Invisible edges for alignment (commented out by default)
+    // ui1 -> api1 [style=invis];
+}

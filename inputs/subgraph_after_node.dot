@@ -1,0 +1,12 @@
+digraph test10 {
+    a
+    subgraph {}
+    subgraph cluster_a {}
+    subgraph {
+        subgraph {
+            subgraph cluster_b {
+                subgraph {}
+            }
+        }
+    }
+}

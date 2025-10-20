@@ -309,6 +309,27 @@ impl Renderable for Element {
                 );
                 canvas.draw_text(self.pos.center(), text.as_str(), &self.look);
             }
+            ShapeKind::Frame(text) => {
+                canvas.draw_rect(
+                    self.pos.bbox(false).0,
+                    self.pos.size(false),
+                    &self.look,
+                    self.properties.clone(),
+                    Option::None,
+                );
+                if let Some(txt_str) = text {
+                    let text_size =
+                        get_size_for_str(txt_str, self.look.font_size);
+                    let x_middle = self.pos.middle().x;
+                    let text_pos = Point::new(
+                        x_middle - text_size.x * 0.,
+                        self.pos.bbox(false).0.y
+                            + text_size.y / 2.
+                            + BORDER_PADDING / 2.,
+                    );
+                    canvas.draw_text(text_pos, txt_str.as_str(), &self.look);
+                }
+            }
             ShapeKind::Circle(text) => {
                 canvas.draw_circle(
                     self.pos.center(),

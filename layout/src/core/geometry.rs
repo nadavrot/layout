@@ -504,6 +504,34 @@ impl Position {
         self.center = self.center.transpose();
         self.halo = self.halo.transpose();
     }
+
+    pub fn set_min_x(&mut self, x: f64) {
+        let old_min_x = self.middle.x - self.size.x * 0.5;
+        let diff = x - old_min_x;
+        self.middle.x += diff * 0.5;
+        self.size.x -= diff;
+    }
+
+    pub fn set_min_y(&mut self, y: f64) {
+        let old_min_y = self.middle.y - self.size.y * 0.5;
+        let diff = y - old_min_y;
+        self.middle.y += diff * 0.5;
+        self.size.y -= diff;
+    }
+
+    pub fn set_max_x(&mut self, x: f64) {
+        let old_max_x = self.middle.x + self.size.x * 0.5;
+        let diff = x - old_max_x;
+        self.middle.x += diff * 0.5;
+        self.size.x += diff;
+    }
+
+    pub fn set_max_y(&mut self, y: f64) {
+        let old_max_y = self.middle.y + self.size.y * 0.5;
+        let diff = y - old_max_y;
+        self.middle.y += diff * 0.5;
+        self.size.y += diff;
+    }
 }
 
 /// \return True if the segment intersects the rect.

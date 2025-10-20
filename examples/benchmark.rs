@@ -1,6 +1,7 @@
 //! This is a sample program that prints a bunch of elements to an SVG file so
 //! we can visually see if the things that we render look right.
 
+use layout::adt::dag::SubgraphHandle;
 use layout::backends::svg::SVGWriter;
 use layout::core::base::Orientation;
 use layout::core::color::Color;
@@ -10,7 +11,15 @@ pub const LAYOUT_HELPER: bool = true;
 
 fn test_main(n_node: usize, _n_edge: usize) {
     let mut svg = SVGWriter::new();
-    let mut gb = VisualGraph::new(Orientation::LeftToRight);
+    let mut gb = VisualGraph::new(
+        Orientation::LeftToRight,
+        Element::create(
+            ShapeKind::Frame(Some("Main Graph".to_string())),
+            StyleAttr::new(Color::transparent(), 0, None, 0, 0),
+            Orientation::LeftToRight,
+            Point::zero(),
+        ),
+    );
 
     for i in 0..n_node {
         let elem = Element::create(
@@ -19,7 +28,7 @@ fn test_main(n_node: usize, _n_edge: usize) {
             Orientation::LeftToRight,
             Point::zero(),
         );
-        gb.add_node(elem);
+        gb.add_node(elem, SubgraphHandle::new(0));
     }
     let t0 = std::time::Instant::now();
 

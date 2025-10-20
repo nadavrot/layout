@@ -1,0 +1,30 @@
+digraph G {
+  subgraph noncluster_0 {
+style=filled
+node [fontname="Helvetica" fontsize=10 shape=box style=filled];
+    B -> I -> P
+    B -> K -> S
+    A
+    C
+  }
+
+  subgraph noncluster_1 {
+    E -> H -> T
+    M
+  }
+  
+   subgraph noncluster_2 {
+    D
+    G -> J
+    N Q
+  }
+  A -> L -> U
+  K -> O
+  N -> T
+  D -> M -> Q
+  F -> N
+  J -> R
+  C -> H
+
+
+}
