@@ -134,9 +134,15 @@ impl Lexer {
         changed
     }
 
+    /// Returns true if `ch` may start a DOT ID: [a-zA-Z\200-\377_].
+    /// The \200-\377 range covers every byte of a non-ASCII UTF-8 character.
+    fn is_id_start(ch: char) -> bool {
+        ch.is_ascii_alphabetic() || ch == '_' || !ch.is_ascii()
+    }
+
     pub fn read_identifier(&mut self) -> String {
         let mut result = String::new();
-        while self.ch.is_ascii_alphanumeric() || self.ch == '_' {
+        while Self::is_id_start(self.ch) || self.ch.is_ascii_digit() {
             result.push(self.ch);
             self.read_char();
         }
@@ -241,7 +247,7 @@ impl Lexer {
                 tok = Token::EOF;
             }
             _ => {
-                if self.ch.is_ascii_alphabetic() {
+                if Self::is_id_start(self.ch) {
                     let name = self.read_identifier();
                     match name.as_str() {
                         "graph" => {

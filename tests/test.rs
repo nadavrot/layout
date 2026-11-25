@@ -96,6 +96,21 @@ mod tests {
     }
 
     #[test]
+    fn non_ascii_and_underscore_identifiers() {
+        // A DOT ID is any string of [a-zA-Z\200-\377_0-9] not beginning with
+        // a digit, so any non-ASCII character and a leading '_' are allowed.
+        let mut lexer = Lexer::from_string("Chloé -> Émile -> 東京 -> _a1");
+        assert!(is_identifier(lexer.next_token(), "Chloé"));
+        assert!(matches!(lexer.next_token(), Token::ArrowRight));
+        assert!(is_identifier(lexer.next_token(), "Émile"));
+        assert!(matches!(lexer.next_token(), Token::ArrowRight));
+        assert!(is_identifier(lexer.next_token(), "東京"));
+        assert!(matches!(lexer.next_token(), Token::ArrowRight));
+        assert!(is_identifier(lexer.next_token(), "_a1"));
+        assert!(matches!(lexer.next_token(), Token::EOF));
+    }
+
+    #[test]
     fn simple_program() {
         let mut lexer = Lexer::from_string("digraph { a -> b; } ");
         assert!(matches!(lexer.next_token(), Token::DigraphKW));
@@ -163,6 +178,17 @@ mod tests {
     fn parse_program2() {
         let program = get_sample_program2();
         let mut parser = DotParser::new(&program[..]);
+        if let Result::Err(err) = parser.process() {
+            parser.print_error();
+            println!("Error: {}", err);
+            panic!();
+        }
+    }
+
+    #[test]
+    fn parse_non_ascii_identifiers() {
+        let mut parser =
+            DotParser::new("digraph { Zoë -> Œdipe; α -> β [label=été]; }");
         if let Result::Err(err) = parser.process() {
             parser.print_error();
             println!("Error: {}", err);
