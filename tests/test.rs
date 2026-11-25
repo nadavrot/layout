@@ -171,6 +171,13 @@ mod tests {
     }
 
     #[test]
+    fn missing_node_id_error() {
+        let mut parser = DotParser::new("digraph { a -> ; }");
+        let err = parser.process().unwrap_err();
+        assert_eq!(err, "Expected a node ID");
+    }
+
+    #[test]
     fn parse_program_fail() {
         let mut parser = DotParser::new("graph { } s");
         if parser.process().is_err() {
