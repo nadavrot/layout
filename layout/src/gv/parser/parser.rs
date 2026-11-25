@@ -325,7 +325,7 @@ impl DotParser {
             // Consume the value name.
             self.lex();
         } else {
-            return to_error("port");
+            return to_error("Expected a node ID");
         }
 
         if let Token::Colon = self.tok.clone() {
